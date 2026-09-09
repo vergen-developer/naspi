@@ -17,9 +17,6 @@ fi
 
 set -euo pipefail
 
-export DEBIAN_FRONTEND=noninteractive
-export APT_LISTCHANGES_FRONTEND=none
-
 HOST_NAME="${NASPI_HOSTNAME:-mariarosaria}"
 SHARE_NAME="nas"
 SHARE_PATH="/srv/nas"
@@ -27,11 +24,28 @@ NASPI_DIR="/etc/naspi"
 CRED_FILE="${NASPI_DIR}/credentials"
 TS_CACHE="/var/cache/naspi"
 TS_ARMv6_PIN="1.62.0"
-WAIT_LOGIN_SECS="${NASPI_WAIT_LOGIN:-300}"
+WAIT_LOGIN_SECS="${NASPI_WAIT_LOGIN:-15}"
 
 log()  { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31mXX\033[0m %s\n' "$*" >&2; exit 1; }
+
+export DEBIAN_FRONTEND=noninteractive
+export DEBCONF_NONINTERACTIVE_SEEN=true
+export NEEDRESTART_MODE=a
+export NEEDRESTART_SUSPEND=1
+export UCF_FORCE_CONFFOLD=1
+export APT_LISTCHANGES_FRONTEND=none
+
+run_to() {
+  local secs="$1"
+  shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout "$secs" "$@" </dev/null
+  else
+    "$@" </dev/null
+  fi
+}
 
 trap 'warn "Errore alla riga $LINENO: $BASH_COMMAND"' ERR
 
@@ -55,7 +69,7 @@ detect_user() {
 set_hostname() {
   log "Hostname di rete: ${HOST_NAME}  (\\${HOST_NAME}.local\\${SHARE_NAME})"
   if command -v hostnamectl >/dev/null 2>&1; then
-    hostnamectl set-hostname "$HOST_NAME" >/dev/null 2>&1 || true
+    run_to 8 hostnamectl set-hostname "$HOST_NAME" >/dev/null 2>&1 || true
   fi
   hostname "$HOST_NAME" >/dev/null 2>&1 || true
   echo "$HOST_NAME" > /etc/hostname
@@ -87,11 +101,11 @@ ensure_swap() {
   [ -n "$kb" ] || return 0
   [ "$kb" -lt 700000 ] || return 0
   [ -f /etc/dphys-swapfile ] || return 0
-  log "RAM bassa (${kb} kB): swap 256 MB"
+  log "RAM bassa (${kb} kB): swap 256 MB (attendi)"
   sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=256/' /etc/dphys-swapfile
   grep -q '^CONF_SWAPSIZE=' /etc/dphys-swapfile \
     || echo 'CONF_SWAPSIZE=256' >> /etc/dphys-swapfile
-  dphys-swapfile setup >/dev/null 2>&1 || true
+  run_to 90 dphys-swapfile setup >/dev/null 2>&1 || true
   dphys-swapfile swapon >/dev/null 2>&1 || true
 }
 
@@ -107,7 +121,18 @@ lower_gpu_mem() {
   grep -q '^gpu_mem=' "$cfg" || echo 'gpu_mem=16' >> "$cfg"
 }
 
-APT_OPTS=(-y --no-install-recommends -o Dpkg::Options::=--force-confold -o Acquire::Retries=3)
+APT_OPTS=(-y --no-install-recommends -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold -o Acquire::Retries=3)
+
+preseed_debconf() {
+  command -v debconf-set-selections >/dev/null 2>&1 || return 0
+  debconf-set-selections <<'EOF' || true
+samba-common samba-common/workgroup string WORKGROUP
+samba-common samba-common/dhcp boolean false
+samba-common samba-common/do_debconf boolean true
+iptables-persistent iptables-persistent/autosave_v4 boolean false
+iptables-persistent iptables-persistent/autosave_v6 boolean false
+EOF
+}
 
 pkg_installed() {
   dpkg -s "$1" >/dev/null 2>&1
@@ -116,13 +141,15 @@ pkg_installed() {
 # Installa il primo pacchetto disponibile tra gli argomenti.
 pkg_first() {
   local p
+  preseed_debconf
   for p in "$@"; do
     [ -n "$p" ] || continue
     if pkg_installed "$p"; then
       return 0
     fi
-    if apt-get install "${APT_OPTS[@]}" --fix-missing "$p"; then
-      log "pacchetto: $p"
+    log "Installo $p — sul Pi 1 può richiedere diversi minuti, non è fermo"
+    if DEBIAN_FRONTEND=noninteractive apt-get install "${APT_OPTS[@]}" --fix-missing "$p" </dev/null; then
+      log "ok $p"
       return 0
     fi
     warn "$p non trovato, provo alternativa"
@@ -133,9 +160,9 @@ pkg_first() {
 http_get() {
   local url="$1" out="$2"
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL --retry 3 --connect-timeout 20 -o "$out" "$url"
+    curl -fsSL --retry 3 --connect-timeout 20 --max-time 180 -o "$out" "$url"
   elif command -v wget >/dev/null 2>&1; then
-    wget -q --tries=3 --timeout=20 -O "$out" "$url"
+    wget -q --tries=3 --timeout=20 --read-timeout=180 -O "$out" "$url"
   elif command -v busybox >/dev/null 2>&1; then
     busybox wget -q -O "$out" "$url"
   else
@@ -146,9 +173,9 @@ http_get() {
 http_pipe() {
   local url="$1"
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL --retry 3 --connect-timeout 20 "$url"
+    curl -fsSL --retry 3 --connect-timeout 20 --max-time 120 "$url"
   elif command -v wget >/dev/null 2>&1; then
-    wget -qO- --tries=3 --timeout=20 "$url"
+    wget -qO- --tries=3 --timeout=20 --read-timeout=120 "$url"
   elif command -v busybox >/dev/null 2>&1; then
     busybox wget -q -O- "$url"
   else
@@ -157,16 +184,18 @@ http_pipe() {
 }
 
 apt_prepare() {
-  log "Indici apt + riparazione dpkg"
-  dpkg --configure -a >/dev/null 2>&1 || true
-  apt-get -f install -y -qq || true
-  if ! apt-get update -qq \
+  log "Indici apt + riparazione dpkg (attendi, niente domande)"
+  preseed_debconf
+  DEBIAN_FRONTEND=noninteractive dpkg --configure -a </dev/null >/dev/null 2>&1 || true
+  DEBIAN_FRONTEND=noninteractive apt-get -f install -y </dev/null || true
+  log "apt update in corso..."
+  if ! DEBIAN_FRONTEND=noninteractive apt-get update \
       -o Acquire::Check-Valid-Until=false \
       -o Acquire::AllowReleaseInfoChange=true \
-      -o Acquire::Retries=3; then
-    warn "apt update instabile, riprovo senza scadenze"
-    apt-get update -o Acquire::Check-Valid-Until=false \
-      -o Acquire::AllowReleaseInfoChange=true \
+      -o Acquire::Retries=3 </dev/null; then
+    warn "apt update instabile, riprovo"
+    DEBIAN_FRONTEND=noninteractive apt-get update -o Acquire::Check-Valid-Until=false \
+      -o Acquire::AllowReleaseInfoChange=true </dev/null \
       || warn "uso la cache apt già presente"
   fi
 }
@@ -559,12 +588,13 @@ start_samba() {
   enable_boot
   systemctl enable smbd nmbd avahi-daemon >/dev/null 2>&1 || true
   systemctl enable samba >/dev/null 2>&1 || true
-  systemctl restart nmbd >/dev/null 2>&1 || true
-  if ! systemctl restart smbd >/dev/null 2>&1; then
-    systemctl restart samba >/dev/null 2>&1 \
+  log "Avvio Samba"
+  if ! run_to 60 systemctl restart smbd >/dev/null 2>&1; then
+    run_to 60 systemctl restart samba >/dev/null 2>&1 \
       || die "Samba non parte. Log: $(journalctl -u smbd -n 15 --no-pager 2>/dev/null | tail -5)"
   fi
-  systemctl restart avahi-daemon >/dev/null 2>&1 || true
+  run_to 20 systemctl restart nmbd >/dev/null 2>&1 || true
+  run_to 20 systemctl restart avahi-daemon >/dev/null 2>&1 || true
 }
 
 bin_runs() {
@@ -643,8 +673,8 @@ start_tailscaled() {
   modprobe tun 2>/dev/null || true
   systemctl daemon-reload || true
   systemctl enable tailscaled >/dev/null 2>&1 || true
-  systemctl restart tailscaled || true
-  sleep 3
+  run_to 45 systemctl restart tailscaled || true
+  sleep 2
   systemctl is-active --quiet tailscaled
 }
 
@@ -656,11 +686,12 @@ install_tailscale() {
     fi
   fi
 
-  timedatectl set-ntp true >/dev/null 2>&1 || true
+  run_to 8 timedatectl set-ntp true >/dev/null 2>&1 || true
 
   if ! is_armv6; then
-    log "Installazione Tailscale (script ufficiale)"
-    if http_pipe https://tailscale.com/install.sh | sh; then
+    log "Installazione Tailscale (script ufficiale, max 3 min)"
+    if http_get https://tailscale.com/install.sh /tmp/naspi-ts-install.sh \
+      && run_to 180 sh /tmp/naspi-ts-install.sh; then
       if start_tailscaled; then
         return 0
       fi
@@ -702,18 +733,18 @@ ts_authurl() { ts_field AuthURL; }
 bring_up_tailscale() {
   if [ -n "${TAILSCALE_AUTHKEY:-}" ]; then
     log "Tailscale: autenticazione con auth key"
-    tailscale up --auth-key="$TAILSCALE_AUTHKEY" --accept-dns=false --hostname="$HOST_NAME" \
-      || tailscale up --authkey="$TAILSCALE_AUTHKEY" --accept-dns=false --hostname="$HOST_NAME" \
+    run_to 40 tailscale up --auth-key="$TAILSCALE_AUTHKEY" --accept-dns=false --hostname="$HOST_NAME" \
+      || run_to 40 tailscale up --authkey="$TAILSCALE_AUTHKEY" --accept-dns=false --hostname="$HOST_NAME" \
       || warn "Auth key rifiutata: userai il link nel riepilogo"
     return 0
   fi
 
-  log "Avvio Tailscale (login nel browser)"
-  timeout 25 tailscale up --accept-dns=false --hostname="$HOST_NAME" >/tmp/naspi-tailscale.up 2>&1 || true
+  log "Avvio Tailscale (max 20s, poi stampo il link)"
+  run_to 20 tailscale up --accept-dns=false --hostname="$HOST_NAME" >/tmp/naspi-tailscale.up 2>&1 || true
 }
 
 wait_tailscale_login() {
-  local state url elapsed=0 i
+  local state url i
   state="$(ts_state || true)"
   if [ "$state" = "Running" ]; then
     return 0
@@ -723,12 +754,13 @@ wait_tailscale_login() {
   fi
 
   url=""
-  for i in 1 2 3 4 5 6; do
+  for i in 1 2 3 4; do
     url="$(ts_authurl || true)"
-    [ -z "$url" ] && [ -f /tmp/naspi-tailscale.up ] \
-      && url="$(grep -oE 'https://login\.tailscale\.com/[^[:space:]]+' /tmp/naspi-tailscale.up | head -1 || true)"
+    if [ -z "$url" ] && [ -f /tmp/naspi-tailscale.up ]; then
+      url="$(grep -oE 'https://login\.tailscale\.com/[^[:space:]]+' /tmp/naspi-tailscale.up | head -1 || true)"
+    fi
     [ -n "$url" ] && break
-    sleep 2
+    sleep 1
   done
 
   if [ -z "$url" ]; then
@@ -741,18 +773,7 @@ wait_tailscale_login() {
   printf '  LOGIN TAILSCALE (apri questo link)\n'
   printf '  %s\n' "$url"
   printf '----------------------------------------------\033[0m\n'
-  printf 'Attendo il login (max %ss). Da un altro PC apri il link e approva.\n' "$WAIT_LOGIN_SECS"
-
-  while [ "$elapsed" -lt "$WAIT_LOGIN_SECS" ]; do
-    state="$(ts_state || true)"
-    if [ "$state" = "Running" ]; then
-      log "Tailscale connesso"
-      return 0
-    fi
-    sleep 5
-    elapsed=$((elapsed + 5))
-  done
-  warn "Login non completato ora: apri il link e poi esegui: sudo naspi"
+  log "Non resto in attesa: il riepilogo è sotto. Poi: sudo naspi"
 }
 
 write_cli() {
