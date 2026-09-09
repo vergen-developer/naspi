@@ -4,5 +4,9 @@
   "2": "main",
   "3": "install_tailscale",
   "4": "die",
-  "5": "ts_field"
+  "5": "ts_field",
+  "6": "setup_share_dir",
+  "7": "format-usb.sh",
+  "8": "main",
+  "9": "format_disk"
 }

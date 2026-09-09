@@ -3,9 +3,8 @@
   "1": "log",
   "2": "main",
   "3": "install_tailscale",
-  "4": "die",
+  "4": "install_static_tailscale",
   "5": "ts_field",
-  "6": "setup_share_dir",
-  "7": "start_samba",
-  "8": "save_creds"
+  "6": "http_pipe",
+  "7": "format-usb.sh"
 }

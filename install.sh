@@ -1,12 +1,20 @@
 #!/bin/bash
 # NASPI — NAS minimale per Raspberry Pi 1 (e successivi)
 #
-# Sul Pi (da SSH o console):
+# Sul Pi:
 #   sudo bash install.sh
 #
-# Login Tailscale automatico (opzionale):
-#   sudo TAILSCALE_AUTHKEY=tskey-auth-XXXX bash install.sh
-#
+if [ -z "${BASH_VERSION:-}" ]; then
+  exec /bin/bash "$0" "$@"
+fi
+_src="${BASH_SOURCE[0]:-$0}"
+if [ -f "$_src" ] && grep -q $'\r' "$_src" 2>/dev/null; then
+  _tmp="$(mktemp)"
+  tr -d '\r' < "$_src" > "$_tmp"
+  chmod +x "$_tmp"
+  exec /bin/bash "$_tmp" "$@"
+fi
+
 set -euo pipefail
 
 export DEBIAN_FRONTEND=noninteractive
@@ -24,6 +32,8 @@ WAIT_LOGIN_SECS="${NASPI_WAIT_LOGIN:-300}"
 log()  { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31mXX\033[0m %s\n' "$*" >&2; exit 1; }
+
+trap 'warn "Errore alla riga $LINENO: $BASH_COMMAND"' ERR
 
 need_root() {
   [ "$(id -u)" -eq 0 ] || die "Esegui: sudo bash install.sh"
@@ -73,7 +83,8 @@ ts_arch() {
 
 ensure_swap() {
   local kb
-  kb="$(awk '/MemTotal/ {print $2}' /proc/meminfo)"
+  kb="$(awk '/MemTotal/ {print $2}' /proc/meminfo 2>/dev/null || true)"
+  [ -n "$kb" ] || return 0
   [ "$kb" -lt 700000 ] || return 0
   [ -f /etc/dphys-swapfile ] || return 0
   log "RAM bassa (${kb} kB): swap 256 MB"
@@ -90,29 +101,115 @@ lower_gpu_mem() {
     [ -f "$f" ] && cfg="$f" && break
   done
   [ -n "$cfg" ] || return 0
-  dpkg -s raspberrypi-ui-mods >/dev/null 2>&1 && return 0
+  if dpkg -s raspberrypi-ui-mods >/dev/null 2>&1; then
+    return 0
+  fi
   grep -q '^gpu_mem=' "$cfg" || echo 'gpu_mem=16' >> "$cfg"
 }
 
+APT_OPTS=(-y --no-install-recommends -o Dpkg::Options::=--force-confold -o Acquire::Retries=3)
+
+pkg_installed() {
+  dpkg -s "$1" >/dev/null 2>&1
+}
+
+# Installa il primo pacchetto disponibile tra gli argomenti.
+pkg_first() {
+  local p
+  for p in "$@"; do
+    [ -n "$p" ] || continue
+    if pkg_installed "$p"; then
+      return 0
+    fi
+    if apt-get install "${APT_OPTS[@]}" --fix-missing "$p"; then
+      log "pacchetto: $p"
+      return 0
+    fi
+    warn "$p non trovato, provo alternativa"
+  done
+  return 1
+}
+
+http_get() {
+  local url="$1" out="$2"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --retry 3 --connect-timeout 20 -o "$out" "$url"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q --tries=3 --timeout=20 -O "$out" "$url"
+  elif command -v busybox >/dev/null 2>&1; then
+    busybox wget -q -O "$out" "$url"
+  else
+    return 1
+  fi
+}
+
+http_pipe() {
+  local url="$1"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL --retry 3 --connect-timeout 20 "$url"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO- --tries=3 --timeout=20 "$url"
+  elif command -v busybox >/dev/null 2>&1; then
+    busybox wget -q -O- "$url"
+  else
+    return 1
+  fi
+}
+
+apt_prepare() {
+  log "Indici apt + riparazione dpkg"
+  dpkg --configure -a >/dev/null 2>&1 || true
+  apt-get -f install -y -qq || true
+  if ! apt-get update -qq \
+      -o Acquire::Check-Valid-Until=false \
+      -o Acquire::AllowReleaseInfoChange=true \
+      -o Acquire::Retries=3; then
+    warn "apt update instabile, riprovo senza scadenze"
+    apt-get update -o Acquire::Check-Valid-Until=false \
+      -o Acquire::AllowReleaseInfoChange=true \
+      || warn "uso la cache apt già presente"
+  fi
+}
+
 apt_ok() {
-  log "Installazione pacchetti minimi (Samba + Avahi)"
-  apt-get update -qq
-  apt-get install -y -qq --no-install-recommends \
-    ca-certificates curl samba samba-common-bin avahi-daemon iptables
-  apt-get install -y -qq --no-install-recommends ntfs-3g || true
-  apt-get install -y -qq --no-install-recommends exfatprogs \
-    || apt-get install -y -qq --no-install-recommends exfat-fuse \
-    || true
+  apt_prepare
+  log "Pacchetti (con alternative se un nome manca)"
+
+  pkg_first ca-certificates openssl || warn "certificati HTTPS assenti"
+  pkg_first curl wget || die "Né curl né wget: impossibile scaricare Tailscale"
+
+  if ! pkg_first samba; then
+    pkg_first samba-common || true
+    pkg_first samba-common-bin || true
+    pkg_first samba-dsdb-modules || true
+  fi
+  pkg_first samba-common-bin samba-common || true
+
+  if ! command -v smbd >/dev/null 2>&1 && ! command -v samba >/dev/null 2>&1; then
+    die "Samba non installabile (pacchetto assente nei repo). Controlla: apt-cache search samba"
+  fi
+
+  pkg_first avahi-daemon avahi-utils libnss-mdns \
+    || warn "Avahi assente: in LAN usa \\\\${HOST_NAME}\\${SHARE_NAME} (NetBIOS)"
+  pkg_first libnss-mdns || true
+  pkg_first iptables iptables-nft nftables \
+    || warn "iptables/nftables assenti: Tailscale userà il fallback userspace se serve"
+  pkg_first ntfs-3g ntfsprogs || true
+  pkg_first exfatprogs exfat-fuse exfat-utils fuse-exfat || true
+  pkg_first iproute2 iproute || true
+  pkg_first kmod || true
 }
 
 install_fs_helper() {
   case "${1:-}" in
     ntfs|ntfs-3g)
-      apt-get install -y -qq --no-install-recommends ntfs-3g || true
+      pkg_first ntfs-3g ntfsprogs || true
       ;;
     exfat)
-      apt-get install -y -qq --no-install-recommends exfatprogs \
-        || apt-get install -y -qq --no-install-recommends exfat-fuse || true
+      pkg_first exfatprogs exfat-fuse exfat-utils fuse-exfat || true
+      ;;
+    vfat|fat|fat32)
+      pkg_first dosfstools || true
       ;;
   esac
 }
@@ -144,7 +241,9 @@ usb_share_source() {
     esac
     echo "$name $fstype"
     return 0
-  done < <(lsblk -rpn -o NAME,TYPE,TRAN,PKNAME,FSTYPE)
+  done < <(lsblk -rpn -o NAME,TYPE,TRAN,PKNAME,FSTYPE 2>/dev/null \
+    || lsblk -rpn -o NAME,TYPE,PKNAME,FSTYPE 2>/dev/null \
+    || true)
   return 1
 }
 
@@ -203,7 +302,9 @@ usb_share_source() {
     esac
     echo "$name $fstype"
     return 0
-  done < <(lsblk -rpn -o NAME,TYPE,TRAN,PKNAME,FSTYPE)
+  done < <(lsblk -rpn -o NAME,TYPE,TRAN,PKNAME,FSTYPE 2>/dev/null \
+    || lsblk -rpn -o NAME,TYPE,PKNAME,FSTYPE 2>/dev/null \
+    || true)
   return 1
 }
 
@@ -274,7 +375,7 @@ EOF
 ACTION=="add", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", RUN+="/bin/systemctl --no-block start naspi-usb.service"
 EOF
 
-  systemctl daemon-reload
+  systemctl daemon-reload || true
   systemctl enable naspi-usb.service >/dev/null 2>&1 || true
   udevadm control --reload-rules >/dev/null 2>&1 || true
 }
@@ -345,22 +446,21 @@ EOF
 
 write_smb_conf() {
   log "Configurazione Samba"
-  [ -f /etc/samba/smb.conf ] && [ ! -f /etc/samba/smb.conf.naspi.bak ] \
-    && cp -a /etc/samba/smb.conf /etc/samba/smb.conf.naspi.bak
+  if [ -f /etc/samba/smb.conf ] && [ ! -f /etc/samba/smb.conf.naspi.bak ]; then
+    cp -a /etc/samba/smb.conf /etc/samba/smb.conf.naspi.bak
+  fi
 
   cat > /etc/samba/smb.conf <<EOF
 [global]
    workgroup = WORKGROUP
    server string = ${HOST_NAME}
    netbios name = ${HOST_NAME}
-   mdns name = mdns
    server role = standalone server
    security = user
    map to guest = Bad User
    dns proxy = no
-   logging = systemd
    max log size = 50
-   server min protocol = SMB2
+   min protocol = SMB2
    load printers = no
    printing = bsd
    printcap name = /dev/null
@@ -373,10 +473,6 @@ write_smb_conf() {
    wins support = no
    hostname lookups = no
    use sendfile = yes
-   aio read size = 0
-   aio write size = 0
-   socket options = TCP_NODELAY IPTOS_LOWDELAY
-   getwd cache = yes
 
 [${SHARE_NAME}]
    path = ${SHARE_PATH}
@@ -392,12 +488,13 @@ write_smb_conf() {
 EOF
 
   if ! pdbedit -L 2>/dev/null | grep -q "^${NAS_USER}:"; then
-    printf '%s\n%s\n' "$SMB_PASS" "$SMB_PASS" | smbpasswd -a -s "$NAS_USER" >/dev/null
+    printf '%s\n%s\n' "$SMB_PASS" "$SMB_PASS" | smbpasswd -a -s "$NAS_USER" >/dev/null \
+      || die "smbpasswd fallito per utente ${NAS_USER}"
   else
     printf '%s\n%s\n' "$SMB_PASS" "$SMB_PASS" | smbpasswd -s "$NAS_USER" >/dev/null || true
   fi
 
-  testparm -s >/dev/null
+  testparm -s >/dev/null 2>&1 || warn "testparm ha avvisi, continuo"
 }
 
 write_avahi() {
@@ -455,21 +552,32 @@ EOF
     systemctl enable "${w}.service" >/dev/null 2>&1 || true
   done
   systemctl enable systemd-timesyncd >/dev/null 2>&1 || true
-  systemctl daemon-reload
+  systemctl daemon-reload || true
 }
 
 start_samba() {
   enable_boot
   systemctl enable smbd nmbd avahi-daemon >/dev/null 2>&1 || true
+  systemctl enable samba >/dev/null 2>&1 || true
   systemctl restart nmbd >/dev/null 2>&1 || true
-  systemctl restart smbd
+  if ! systemctl restart smbd >/dev/null 2>&1; then
+    systemctl restart samba >/dev/null 2>&1 \
+      || die "Samba non parte. Log: $(journalctl -u smbd -n 15 --no-pager 2>/dev/null | tail -5)"
+  fi
   systemctl restart avahi-daemon >/dev/null 2>&1 || true
 }
 
 bin_runs() {
-  timeout 5 "$1" version >/dev/null 2>&1 \
-    || timeout 5 "$1" --version >/dev/null 2>&1 \
-    || timeout 5 "$1" -version >/dev/null 2>&1
+  local bin="$1"
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 5 "$bin" version >/dev/null 2>&1 \
+      || timeout 5 "$bin" --version >/dev/null 2>&1 \
+      || timeout 5 "$bin" -version >/dev/null 2>&1
+  else
+    "$bin" version >/dev/null 2>&1 \
+      || "$bin" --version >/dev/null 2>&1 \
+      || "$bin" -version >/dev/null 2>&1
+  fi
 }
 
 install_static_tailscale() {
@@ -482,7 +590,7 @@ install_static_tailscale() {
       "https://pkgs.tailscale.com/stable/tailscale_${ver}_${arch}.tgz" \
       "https://dl.tailscale.com/stable/tailscale_${ver}_${arch}.tgz"; do
       log "Download Tailscale ${ver} (${arch})"
-      if curl -fsSL --retry 3 -o "$tgz" "$url"; then
+      if http_get "$url" "$tgz"; then
         break
       fi
       rm -f "$tgz"
@@ -507,11 +615,11 @@ install_static_tailscale() {
   mkdir -p /var/lib/tailscale /run/tailscale /var/cache/tailscale
   grep -q '^FLAGS=' /etc/default/tailscaled 2>/dev/null \
     || printf 'FLAGS=""\nPORT="41641"\n' > /etc/default/tailscaled
-  systemctl daemon-reload
+  systemctl daemon-reload || true
 }
 
 latest_static_ver() {
-  curl -fsSL "https://pkgs.tailscale.com/stable/" 2>/dev/null \
+  http_pipe "https://pkgs.tailscale.com/stable/" 2>/dev/null \
     | grep -oE 'tailscale_[0-9]+\.[0-9]+\.[0-9]+_arm\.tgz' \
     | head -1 \
     | sed -E 's/tailscale_([0-9.]+)_arm\.tgz/\1/'
@@ -533,7 +641,7 @@ set_ts_flags() {
 
 start_tailscaled() {
   modprobe tun 2>/dev/null || true
-  systemctl daemon-reload
+  systemctl daemon-reload || true
   systemctl enable tailscaled >/dev/null 2>&1 || true
   systemctl restart tailscaled || true
   sleep 3
@@ -552,15 +660,19 @@ install_tailscale() {
 
   if ! is_armv6; then
     log "Installazione Tailscale (script ufficiale)"
-    if curl -fsSL https://tailscale.com/install.sh | sh; then
-      start_tailscaled && return 0
+    if http_pipe https://tailscale.com/install.sh | sh; then
+      if start_tailscaled; then
+        return 0
+      fi
     fi
     warn "Script ufficiale fallito, uso il binario statico"
     local latest
     latest="$(latest_static_ver || true)"
     [ -n "$latest" ] || latest="1.86.4"
     install_static_tailscale "$latest" "$(ts_arch)" || die "Download Tailscale fallito"
-    start_tailscaled && return 0
+    if start_tailscaled; then
+      return 0
+    fi
   fi
 
   log "Pi ARMv6: Tailscale ${TS_ARMv6_PIN} (compatibile BCM2835)"
@@ -603,8 +715,12 @@ bring_up_tailscale() {
 wait_tailscale_login() {
   local state url elapsed=0 i
   state="$(ts_state || true)"
-  [ "$state" = "Running" ] && return 0
-  [ -n "${TAILSCALE_AUTHKEY:-}" ] && return 0
+  if [ "$state" = "Running" ]; then
+    return 0
+  fi
+  if [ -n "${TAILSCALE_AUTHKEY:-}" ]; then
+    return 0
+  fi
 
   url=""
   for i in 1 2 3 4 5 6; do

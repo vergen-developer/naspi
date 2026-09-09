@@ -1,8 +1,14 @@
 {
   "install.sh": {
-    "mtime": 1788960630.9889581,
-    "seen": 1788960645.3754618,
-    "ast_hash": "a17d6c5fd982ea6e46b12cb3f32dc4f5",
+    "mtime": 1788962336.7134454,
+    "seen": 1788962486.443453,
+    "ast_hash": "cd51e83c0e2574f6de3a65926c5d3abf",
+    "semantic_hash": ""
+  },
+  "format-usb.sh": {
+    "mtime": 1788962485.3934805,
+    "seen": 1788962486.443453,
+    "ast_hash": "08d5c66dc9445a1c886199525e47e27f",
     "semantic_hash": ""
   }
 }
