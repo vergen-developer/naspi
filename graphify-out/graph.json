@@ -79,36 +79,6 @@
       "norm_label": "fstab_opts()"
     },
     {
-      "label": "http_pipe()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L189",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_http_pipe",
-      "community": 0,
-      "community_name": "install.sh",
-      "norm_label": "http_pipe()"
-    },
-    {
-      "label": "latest_static_ver()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L705",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_latest_static_ver",
-      "community": 0,
-      "community_name": "install.sh",
-      "norm_label": "latest_static_ver()"
-    },
-    {
       "label": "NEEDRESTART_MODE",
       "file_type": "code",
       "source_file": "install.sh",
@@ -169,51 +139,6 @@
       "norm_label": "ts_arch()"
     },
     {
-      "label": "ts_authurl()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L787",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_ts_authurl",
-      "community": 0,
-      "community_name": "install.sh",
-      "norm_label": "ts_authurl()"
-    },
-    {
-      "label": "ts_field()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L778",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_ts_field",
-      "community": 0,
-      "community_name": "install.sh",
-      "norm_label": "ts_field()"
-    },
-    {
-      "label": "ts_state()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L786",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_ts_state",
-      "community": 0,
-      "community_name": "install.sh",
-      "norm_label": "ts_state()"
-    },
-    {
       "label": "UCF_FORCE_CONFFOLD",
       "file_type": "code",
       "source_file": "install.sh",
@@ -255,7 +180,7 @@
       "_origin": "ast",
       "id": "install_apt_ok",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "apt_ok()"
     },
     {
@@ -270,23 +195,8 @@
       "_origin": "ast",
       "id": "install_apt_prepare",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "apt_prepare()"
-    },
-    {
-      "label": "bring_up_tailscale()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L789",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_bring_up_tailscale",
-      "community": 1,
-      "community_name": "log",
-      "norm_label": "bring_up_tailscale()"
     },
     {
       "label": "install_fs_helper()",
@@ -300,7 +210,7 @@
       "_origin": "ast",
       "id": "install_install_fs_helper",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "install_fs_helper()"
     },
     {
@@ -315,23 +225,8 @@
       "_origin": "ast",
       "id": "install_install_usb_automount",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "install_usb_automount()"
-    },
-    {
-      "label": "log()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L30",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_log",
-      "community": 1,
-      "community_name": "log",
-      "norm_label": "log()"
     },
     {
       "label": "pkg_first()",
@@ -345,7 +240,7 @@
       "_origin": "ast",
       "id": "install_pkg_first",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "pkg_first()"
     },
     {
@@ -360,7 +255,7 @@
       "_origin": "ast",
       "id": "install_pkg_installed",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "pkg_installed()"
     },
     {
@@ -375,7 +270,7 @@
       "_origin": "ast",
       "id": "install_preseed_debconf",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "preseed_debconf()"
     },
     {
@@ -390,7 +285,7 @@
       "_origin": "ast",
       "id": "install_setup_share_dir",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "setup_share_dir()"
     },
     {
@@ -405,7 +300,7 @@
       "_origin": "ast",
       "id": "install_wait_tailscale_login",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "wait_tailscale_login()"
     },
     {
@@ -420,23 +315,8 @@
       "_origin": "ast",
       "id": "install_warn",
       "community": 1,
-      "community_name": "log",
+      "community_name": "warn",
       "norm_label": "warn()"
-    },
-    {
-      "label": "write_smb_conf()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L509",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_write_smb_conf",
-      "community": 1,
-      "community_name": "log",
-      "norm_label": "write_smb_conf()"
     },
     {
       "label": "detect_user()",
@@ -589,6 +469,21 @@
       "norm_label": "write_cli()"
     },
     {
+      "label": "write_smb_conf()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L509",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_write_smb_conf",
+      "community": 2,
+      "community_name": "main",
+      "norm_label": "write_smb_conf()"
+    },
+    {
       "label": "bin_runs()",
       "file_type": "code",
       "source_file": "install.sh",
@@ -679,6 +574,36 @@
       "norm_label": "set_ts_flags()"
     },
     {
+      "label": "start_tailscaled()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L726",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_start_tailscaled",
+      "community": 3,
+      "community_name": "install_tailscale",
+      "norm_label": "start_tailscaled()"
+    },
+    {
+      "label": "bring_up_tailscale()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L789",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_bring_up_tailscale",
+      "community": 4,
+      "community_name": "log",
+      "norm_label": "bring_up_tailscale()"
+    },
+    {
       "label": "enable_boot()",
       "file_type": "code",
       "source_file": "install.sh",
@@ -690,7 +615,7 @@
       "_origin": "ast",
       "id": "install_enable_boot",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "log",
       "norm_label": "enable_boot()"
     },
     {
@@ -705,8 +630,23 @@
       "_origin": "ast",
       "id": "install_ensure_swap",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "log",
       "norm_label": "ensure_swap()"
+    },
+    {
+      "label": "log()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L30",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_log",
+      "community": 4,
+      "community_name": "log",
+      "norm_label": "log()"
     },
     {
       "label": "run_to()",
@@ -720,7 +660,7 @@
       "_origin": "ast",
       "id": "install_run_to",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "log",
       "norm_label": "run_to()"
     },
     {
@@ -735,7 +675,7 @@
       "_origin": "ast",
       "id": "install_set_hostname",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "log",
       "norm_label": "set_hostname()"
     },
     {
@@ -750,7 +690,7 @@
       "_origin": "ast",
       "id": "install_skip",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "log",
       "norm_label": "skip()"
     },
     {
@@ -765,23 +705,8 @@
       "_origin": "ast",
       "id": "install_start_samba",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "log",
       "norm_label": "start_samba()"
-    },
-    {
-      "label": "start_tailscaled()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L726",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_start_tailscaled",
-      "community": 4,
-      "community_name": "skip",
-      "norm_label": "start_tailscaled()"
     },
     {
       "label": "write_avahi()",
@@ -795,8 +720,86 @@
       "_origin": "ast",
       "id": "install_write_avahi",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "log",
       "norm_label": "write_avahi()"
+    },
+    {
+      "label": "ts_authurl()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L787",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_ts_authurl",
+      "community": 5,
+      "community_name": "ts_field",
+      "norm_label": "ts_authurl()"
+    },
+    {
+      "label": "ts_field()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L778",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_ts_field",
+      "community": 5,
+      "community_name": "ts_field",
+      "norm_label": "ts_field()"
+    },
+    {
+      "label": "ts_state()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L786",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_ts_state",
+      "community": 5,
+      "community_name": "ts_field",
+      "norm_label": "ts_state()"
+    },
+    {
+      "label": "backup-desktop.ps1",
+      "file_type": "code",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "windows_backup_desktop",
+      "community": 6,
+      "community_name": "backup-desktop.ps1",
+      "norm_label": "backup-desktop.ps1"
+    },
+    {
+      "label": "Connect-Nas()",
+      "file_type": "code",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "windows_backup_desktop_connect_nas",
+      "community": 6,
+      "community_name": "backup-desktop.ps1",
+      "norm_label": "connect-nas()"
+    },
+    {
+      "label": "Write-Info()",
+      "file_type": "code",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "windows_backup_desktop_write_info",
+      "community": 6,
+      "community_name": "backup-desktop.ps1",
+      "norm_label": "write-info()"
     },
     {
       "label": "format-usb.sh",
@@ -1007,6 +1010,36 @@
       "community": 7,
       "community_name": "format-usb.sh",
       "norm_label": "warn()"
+    },
+    {
+      "label": "http_pipe()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L189",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_http_pipe",
+      "community": 8,
+      "community_name": "http_pipe",
+      "norm_label": "http_pipe()"
+    },
+    {
+      "label": "latest_static_ver()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L705",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_latest_static_ver",
+      "community": 8,
+      "community_name": "http_pipe",
+      "norm_label": "latest_static_ver()"
     }
   ],
   "links": [
@@ -2149,6 +2182,28 @@
       "confidence_score": 1.0
     },
     {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L18",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "windows_backup_desktop",
+      "target": "windows_backup_desktop_write_info",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L22",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "windows_backup_desktop",
+      "target": "windows_backup_desktop_connect_nas",
+      "confidence_score": 1.0
+    },
+    {
       "relation": "defines",
       "confidence": "EXTRACTED",
       "source_file": "format-usb.sh",
@@ -2843,5 +2898,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "63af59a66c5c96713aced91a1cb3655dc77aa09b"
+  "built_at_commit": "620fff3fe83f29dbdc3db96d7652b92ccb3cdce3"
 }
