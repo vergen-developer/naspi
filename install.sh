@@ -2,7 +2,8 @@
 # NASPI — NAS minimale per Raspberry Pi 1 (e successivi)
 #
 # Sul Pi:
-#   sudo bash install.sh
+#   sudo bash install.sh          # idempotente: salta ciò che è già fatto
+#   sudo naspi login              # nuovo link Tailscale (il vecchio scade)
 #
 if [ -z "${BASH_VERSION:-}" ]; then
   exec /bin/bash "$0" "$@"
@@ -29,6 +30,7 @@ WAIT_LOGIN_SECS="${NASPI_WAIT_LOGIN:-15}"
 log()  { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
 die()  { printf '\033[1;31mXX\033[0m %s\n' "$*" >&2; exit 1; }
+skip() { printf '\n\033[1;36m[ok]\033[0m salto: %s\n' "$*"; }
 
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
@@ -67,6 +69,11 @@ detect_user() {
 }
 
 set_hostname() {
+  if [ "$(hostname -s 2>/dev/null || hostname)" = "$HOST_NAME" ] \
+    && [ "$(tr -d ' \t\n' < /etc/hostname 2>/dev/null || true)" = "$HOST_NAME" ]; then
+    skip "hostname ${HOST_NAME}"
+    return 0
+  fi
   log "Hostname di rete: ${HOST_NAME}  (\\${HOST_NAME}.local\\${SHARE_NAME})"
   if command -v hostnamectl >/dev/null 2>&1; then
     run_to 8 hostnamectl set-hostname "$HOST_NAME" >/dev/null 2>&1 || true
@@ -96,10 +103,15 @@ ts_arch() {
 }
 
 ensure_swap() {
-  local kb
+  local kb sw
   kb="$(awk '/MemTotal/ {print $2}' /proc/meminfo 2>/dev/null || true)"
   [ -n "$kb" ] || return 0
   [ "$kb" -lt 700000 ] || return 0
+  sw="$(awk '/SwapTotal/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
+  if [ "${sw:-0}" -ge 200000 ]; then
+    skip "swap già attiva"
+    return 0
+  fi
   [ -f /etc/dphys-swapfile ] || return 0
   log "RAM bassa (${kb} kB): swap 256 MB (attendi)"
   sed -i 's/^CONF_SWAPSIZE=.*/CONF_SWAPSIZE=256/' /etc/dphys-swapfile
@@ -140,20 +152,24 @@ pkg_installed() {
 
 # Installa il primo pacchetto disponibile tra gli argomenti.
 pkg_first() {
-  local p
+  local p rc=1
+  set +e
   preseed_debconf
   for p in "$@"; do
     [ -n "$p" ] || continue
     if pkg_installed "$p"; then
+      set -e
       return 0
     fi
     log "Installo $p — sul Pi 1 può richiedere diversi minuti, non è fermo"
     if DEBIAN_FRONTEND=noninteractive apt-get install "${APT_OPTS[@]}" --fix-missing "$p" </dev/null; then
       log "ok $p"
+      set -e
       return 0
     fi
     warn "$p non trovato, provo alternativa"
   done
+  set -e
   return 1
 }
 
@@ -201,6 +217,11 @@ apt_prepare() {
 }
 
 apt_ok() {
+  if command -v smbd >/dev/null 2>&1 \
+    && { command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; }; then
+    skip "pacchetti apt (già installati)"
+    return 0
+  fi
   apt_prepare
   log "Pacchetti (con alternative se un nome manca)"
 
@@ -223,10 +244,11 @@ apt_ok() {
   pkg_first libnss-mdns || true
   pkg_first iptables iptables-nft nftables \
     || warn "iptables/nftables assenti: Tailscale userà il fallback userspace se serve"
-  pkg_first ntfs-3g ntfsprogs || true
-  pkg_first exfatprogs exfat-fuse exfat-utils fuse-exfat || true
+  pkg_first ntfs-3g ntfsprogs || warn "ntfs opzionale assente (ok)"
+  pkg_first exfatprogs exfat-fuse exfat-utils fuse-exfat || warn "exfat opzionale assente (ok)"
   pkg_first iproute2 iproute || true
   pkg_first kmod || true
+  log "Pacchetti pronti, continuo"
 }
 
 install_fs_helper() {
@@ -411,6 +433,13 @@ EOF
 
 setup_share_dir() {
   mkdir -p "$SHARE_PATH"
+  if [ -x /usr/local/sbin/naspi-usb-mount ] \
+    && [ -f /etc/systemd/system/naspi-usb.service ]; then
+    skip "cartella ${SHARE_PATH} + automount USB"
+    chown "${NAS_USER}:${NAS_GROUP}" "$SHARE_PATH" 2>/dev/null || true
+    chmod 775 "$SHARE_PATH" 2>/dev/null || true
+    return 0
+  fi
   local line uuid fstype src opts fstab_type
   if line="$(usb_share_source)"; then
     src="${line%% *}"
@@ -455,7 +484,11 @@ smb_password() {
     unset _keep_host
   fi
   if [ -z "${SMB_PASS:-}" ]; then
-    SMB_PASS="$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 12)"
+    local i chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
+    SMB_PASS=""
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+      SMB_PASS="${SMB_PASS}${chars:$((RANDOM % ${#chars})):1}"
+    done
   fi
   save_creds
 }
@@ -474,6 +507,13 @@ EOF
 }
 
 write_smb_conf() {
+  if [ -f /etc/samba/smb.conf ] \
+    && grep -q "^\\[${SHARE_NAME}\\]" /etc/samba/smb.conf \
+    && grep -q "path = ${SHARE_PATH}" /etc/samba/smb.conf \
+    && pdbedit -L 2>/dev/null | grep -q "^${NAS_USER}:"; then
+    skip "Samba già configurato"
+    return 0
+  fi
   log "Configurazione Samba"
   if [ -f /etc/samba/smb.conf ] && [ ! -f /etc/samba/smb.conf.naspi.bak ]; then
     cp -a /etc/samba/smb.conf /etc/samba/smb.conf.naspi.bak
@@ -527,6 +567,11 @@ EOF
 }
 
 write_avahi() {
+  if [ -f /etc/avahi/services/naspi.service ] \
+    && grep -q '_smb._tcp' /etc/avahi/services/naspi.service; then
+    skip "Avahi già configurato"
+    return 0
+  fi
   mkdir -p /etc/avahi/services
   if [ -f /etc/avahi/avahi-daemon.conf ]; then
     if grep -qE '^#?host-name=' /etc/avahi/avahi-daemon.conf; then
@@ -554,6 +599,11 @@ EOF
 }
 
 enable_boot() {
+  if [ -f /etc/modules-load.d/tun.conf ] \
+    && [ -f /etc/systemd/system/smbd.service.d/naspi.conf ]; then
+    skip "servizi al boot"
+    return 0
+  fi
   mkdir -p /etc/modules-load.d
   echo tun > /etc/modules-load.d/tun.conf
   modprobe tun 2>/dev/null || true
@@ -588,6 +638,10 @@ start_samba() {
   enable_boot
   systemctl enable smbd nmbd avahi-daemon >/dev/null 2>&1 || true
   systemctl enable samba >/dev/null 2>&1 || true
+  if systemctl is-active --quiet smbd || systemctl is-active --quiet samba; then
+    skip "Samba già avviato"
+    return 0
+  fi
   log "Avvio Samba"
   if ! run_to 60 systemctl restart smbd >/dev/null 2>&1; then
     run_to 60 systemctl restart samba >/dev/null 2>&1 \
@@ -630,7 +684,7 @@ install_static_tailscale() {
   dir="$(mktemp -d)"
   tar -xzf "$tgz" -C "$dir"
   local unpacked
-  unpacked="$(find "$dir" -maxdepth 1 -type d -name 'tailscale_*' | head -1)"
+  unpacked="$(find "$dir" -maxdepth 1 -mindepth 1 -type d -name 'tailscale_*' -print -quit 2>/dev/null || true)"
   [ -n "$unpacked" ] || { rm -rf "$dir"; return 1; }
   install -m 755 "${unpacked}/tailscale" /usr/sbin/tailscale
   install -m 755 "${unpacked}/tailscaled" /usr/sbin/tailscaled
@@ -680,9 +734,11 @@ start_tailscaled() {
 
 install_tailscale() {
   if command -v tailscale >/dev/null 2>&1 && command -v tailscaled >/dev/null 2>&1; then
-    if bin_runs tailscale && systemctl is-active --quiet tailscaled; then
-      log "Tailscale già presente"
-      return 0
+    if bin_runs tailscale; then
+      if systemctl is-active --quiet tailscaled || start_tailscaled; then
+        skip "Tailscale già installato"
+        return 0
+      fi
     fi
   fi
 
@@ -731,6 +787,13 @@ ts_state() { ts_field BackendState; }
 ts_authurl() { ts_field AuthURL; }
 
 bring_up_tailscale() {
+  local state
+  state="$(ts_state || true)"
+  if [ "$state" = "Running" ]; then
+    skip "Tailscale già connesso"
+    return 0
+  fi
+
   if [ -n "${TAILSCALE_AUTHKEY:-}" ]; then
     log "Tailscale: autenticazione con auth key"
     run_to 40 tailscale up --auth-key="$TAILSCALE_AUTHKEY" --accept-dns=false --hostname="$HOST_NAME" \
@@ -739,8 +802,10 @@ bring_up_tailscale() {
     return 0
   fi
 
-  log "Avvio Tailscale (max 20s, poi stampo il link)"
-  run_to 20 tailscale up --accept-dns=false --hostname="$HOST_NAME" >/tmp/naspi-tailscale.up 2>&1 || true
+  log "Nuovo link Tailscale (il precedente scade in pochi minuti)"
+  rm -f "${NASPI_DIR}/tailscale.url"
+  run_to 15 tailscale logout >/dev/null 2>&1 || true
+  run_to 25 tailscale up --accept-dns=false --hostname="$HOST_NAME" >/tmp/naspi-tailscale.up 2>&1 || true
 }
 
 wait_tailscale_login() {
@@ -769,11 +834,12 @@ wait_tailscale_login() {
   fi
 
   echo "$url" > "${NASPI_DIR}/tailscale.url"
-  printf '\n\033[1;36m----------------------------------------------\n'
-  printf '  LOGIN TAILSCALE (apri questo link)\n'
-  printf '  %s\n' "$url"
-  printf '----------------------------------------------\033[0m\n'
-  log "Non resto in attesa: il riepilogo è sotto. Poi: sudo naspi"
+  echo
+  echo "----------------------------------------------"
+  echo "  LOGIN TAILSCALE (apri questo link)"
+  echo "  ${url}"
+  echo "----------------------------------------------"
+  log "Non resto in attesa. Se il link è scaduto: sudo naspi login"
 }
 
 write_cli() {
@@ -789,6 +855,42 @@ SMB_PASS="(vedi /etc/naspi/credentials)"
 if [ -f "$CRED" ]; then
   # shellcheck disable=SC1090
   . "$CRED"
+fi
+
+if [ "${1:-}" = "login" ]; then
+  [ "$(id -u)" -eq 0 ] || { echo "Esegui: sudo naspi login"; exit 1; }
+  echo
+  echo "Genero un nuovo link Tailscale (il vecchio scade in pochi minuti)..."
+  rm -f /etc/naspi/tailscale.url
+  tailscale logout >/dev/null 2>&1 || true
+  if command -v timeout >/dev/null 2>&1; then
+    timeout 25 tailscale up --accept-dns=false --hostname="${HOST_NAME}" >/tmp/naspi-tailscale.up 2>&1 || true
+  else
+    tailscale up --accept-dns=false --hostname="${HOST_NAME}" >/tmp/naspi-tailscale.up 2>&1 || true
+  fi
+  url=""
+  i=0
+  while [ "$i" -lt 8 ]; do
+    url="$(tailscale status --json 2>/dev/null | tr -d '\n' \
+      | sed -n 's/.*"AuthURL"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)"
+    if [ -z "$url" ] && [ -f /tmp/naspi-tailscale.up ]; then
+      url="$(grep -oE 'https://login\.tailscale\.com/[^[:space:]]+' /tmp/naspi-tailscale.up | head -1 || true)"
+    fi
+    [ -n "$url" ] && break
+    sleep 1
+    i=$((i + 1))
+  done
+  if [ -n "$url" ]; then
+    echo "$url" > /etc/naspi/tailscale.url
+    echo
+    echo "----------------------------------------------"
+    echo "  LOGIN TAILSCALE (apri questo link ORA)"
+    echo "  ${url}"
+    echo "----------------------------------------------"
+  else
+    echo "Nessun URL. Prova: sudo tailscale logout && sudo tailscale up"
+  fi
+  exit 0
 fi
 
 hn="${HOST_NAME}.local"
@@ -857,13 +959,14 @@ if [ "${ts_state:-}" = "Running" ]; then
 else
   echo "  Tailscale:    da collegare (${ts_state:-n/d})"
   if [ -n "${ts_url:-}" ]; then
-    echo "    Apri questo link, accedi e approva il Pi:"
+    echo "    Apri questo link SUBITO (scade in pochi minuti):"
     echo "         ${ts_url}"
+    echo "    Se dice Session expired:  sudo naspi login"
     echo "    Poi sul PC: https://tailscale.com/download (stesso account)"
     echo "    Percorso:  \\\\${HOST_NAME}\\${SHARE_NAME}"
     echo "    Alla fine:  sudo naspi"
   else
-    echo "    Sul Pi:  sudo tailscale up"
+    echo "    Sul Pi:  sudo naspi login"
     echo "    Poi apri l'URL, approva, e sul PC installa Tailscale."
     echo "    Percorso:  \\\\${HOST_NAME}\\${SHARE_NAME}"
   fi
@@ -875,6 +978,7 @@ if grep -q 'TS_USERSPACE=1' "$CRED" 2>/dev/null; then
 fi
 echo
 echo "  Rivedi questo riepilogo:  sudo naspi"
+echo "  Nuovo link Tailscale:     sudo naspi login"
 echo "=========================================================="
 echo
 CLI
@@ -902,7 +1006,7 @@ main() {
   need_root
   detect_user
   set_hostname
-  log "Utente Samba: ${NAS_USER}"
+  log "Utente Samba: ${NAS_USER}  (i passi già fatti vengono saltati)"
   ensure_swap
   lower_gpu_mem
   apt_ok
@@ -918,7 +1022,7 @@ main() {
   bring_up_tailscale
   wait_tailscale_login
   print_report
-  log "Fatto. Riepilogo in qualsiasi momento:  sudo naspi"
+  log "Fatto. Riepilogo: sudo naspi    Link nuovo: sudo naspi login"
 }
 
 main "$@"
