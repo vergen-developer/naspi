@@ -19,6 +19,29 @@ function Write-Info([string]$m) {
   if (-not $Silent) { Write-Host $m }
 }
 
+function Write-Brand {
+  if ($Silent) { return }
+  $line = '-' * 56
+  Write-Host ''
+  Write-Host '  V E R G E N' -ForegroundColor Cyan -NoNewline
+  Write-Host '   T E C H N O L O G Y' -ForegroundColor White
+  Write-Host '  NASPI' -ForegroundColor Blue -NoNewline
+  Write-Host '  -  Backup del Desktop sul NAS' -ForegroundColor Gray
+  Write-Host "  $line" -ForegroundColor DarkBlue
+}
+
+function Write-Step([string]$label, [string]$value) {
+  if ($Silent) { return }
+  Write-Host ('    {0,-10}' -f $label) -ForegroundColor DarkGray -NoNewline
+  Write-Host " $value"
+}
+
+function Write-Result([bool]$good, [string]$m) {
+  if ($Silent) { return }
+  if ($good) { Write-Host "    [OK] $m" -ForegroundColor Green }
+  else { Write-Host "    [!!] $m" -ForegroundColor Yellow }
+}
+
 function Connect-Nas {
   if (Test-Path -LiteralPath $Unc) { return }
   New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
@@ -52,10 +75,13 @@ if (-not (Test-Path -LiteralPath $Desktop)) {
   throw "Desktop non trovato: $Desktop"
 }
 
-Write-Info ""
-Write-Info "Backup Desktop -> $Dest"
-Write-Info "Origine: $Desktop"
+Write-Brand
+Write-Step 'Origine' $Desktop
+Write-Step 'Destinazione' $Dest
+Write-Step 'Modalita' $(if ($Mirror) { 'specchio (/MIR: elimina sul NAS cio che non esiste piu)' } else { 'copia (non elimina nulla)' })
+Write-Info ''
 Connect-Nas
+Write-Result $true "NAS raggiungibile: $Unc"
 New-Item -ItemType Directory -Force -Path $Dest | Out-Null
 New-Item -ItemType Directory -Force -Path $LogDir | Out-Null
 
@@ -74,7 +100,17 @@ if ($code -ge 8) {
   throw "Robocopy errore $code  (log: $Log)"
 }
 
-Write-Info ""
-Write-Info "Fatto. Codice robocopy: $code"
-Write-Info "Log: $Log"
+Write-Info ''
+if ($code -le 1) {
+  Write-Result $true "Backup completato (robocopy $code)"
+} else {
+  Write-Result $true "Backup completato con differenze segnalate (robocopy $code)"
+}
+Write-Step 'Log' $Log
+if (-not $Silent) {
+  Write-Host ''
+  Write-Host '  VERGEN TECHNOLOGY' -ForegroundColor Cyan -NoNewline
+  Write-Host '  -  NASPI' -ForegroundColor DarkGray
+  Write-Host ''
+}
 exit 0

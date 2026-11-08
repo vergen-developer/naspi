@@ -22,7 +22,7 @@
       "label": "APT_LISTCHANGES_FRONTEND",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L56",
+      "source_location": "L147",
       "metadata": {
         "language": "bash",
         "kind": "code"
@@ -37,7 +37,7 @@
       "label": "boot_file()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L152",
+      "source_location": "L243",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -52,7 +52,7 @@
       "label": "DEBCONF_NONINTERACTIVE_SEEN",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L52",
+      "source_location": "L143",
       "metadata": {
         "language": "bash",
         "kind": "code"
@@ -67,7 +67,7 @@
       "label": "DEBIAN_FRONTEND",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L51",
+      "source_location": "L142",
       "metadata": {
         "language": "bash",
         "kind": "code"
@@ -79,25 +79,10 @@
       "norm_label": "debian_frontend"
     },
     {
-      "label": "install_usb_automount()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L375",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_install_usb_automount",
-      "community": 0,
-      "community_name": "install.sh",
-      "norm_label": "install_usb_automount()"
-    },
-    {
       "label": "NEEDRESTART_MODE",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L53",
+      "source_location": "L144",
       "metadata": {
         "language": "bash",
         "kind": "code"
@@ -112,7 +97,7 @@
       "label": "NEEDRESTART_SUSPEND",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L54",
+      "source_location": "L145",
       "metadata": {
         "language": "bash",
         "kind": "code"
@@ -127,7 +112,7 @@
       "label": "pi_model()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L185",
+      "source_location": "L276",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -139,25 +124,10 @@
       "norm_label": "pi_model()"
     },
     {
-      "label": "pkg_installed()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L260",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_pkg_installed",
-      "community": 0,
-      "community_name": "install.sh",
-      "norm_label": "pkg_installed()"
-    },
-    {
       "label": "ts_arch()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L111",
+      "source_location": "L202",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -172,7 +142,7 @@
       "label": "UCF_FORCE_CONFFOLD",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L55",
+      "source_location": "L146",
       "metadata": {
         "language": "bash",
         "kind": "code"
@@ -187,7 +157,7 @@
       "label": "apt_ok()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L330",
+      "source_location": "L416",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -195,14 +165,14 @@
       "_origin": "ast",
       "id": "install_apt_ok",
       "community": 1,
-      "community_name": "log",
+      "community_name": "pkg_first",
       "norm_label": "apt_ok()"
     },
     {
       "label": "apt_prepare()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L313",
+      "source_location": "L404",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -210,44 +180,29 @@
       "_origin": "ast",
       "id": "install_apt_prepare",
       "community": 1,
-      "community_name": "log",
+      "community_name": "pkg_first",
       "norm_label": "apt_prepare()"
     },
     {
-      "label": "bring_up_tailscale()",
+      "label": "install_web()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L955",
+      "source_location": "L1525",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
       },
       "_origin": "ast",
-      "id": "install_bring_up_tailscale",
+      "id": "install_install_web",
       "community": 1,
-      "community_name": "log",
-      "norm_label": "bring_up_tailscale()"
-    },
-    {
-      "label": "log()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L46",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_log",
-      "community": 1,
-      "community_name": "log",
-      "norm_label": "log()"
+      "community_name": "pkg_first",
+      "norm_label": "install_web()"
     },
     {
       "label": "pkg_first()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L265",
+      "source_location": "L356",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -255,14 +210,29 @@
       "_origin": "ast",
       "id": "install_pkg_first",
       "community": 1,
-      "community_name": "log",
+      "community_name": "pkg_first",
       "norm_label": "pkg_first()"
+    },
+    {
+      "label": "pkg_installed()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L351",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_pkg_installed",
+      "community": 1,
+      "community_name": "pkg_first",
+      "norm_label": "pkg_installed()"
     },
     {
       "label": "preseed_debconf()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L249",
+      "source_location": "L340",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -270,68 +240,8 @@
       "_origin": "ast",
       "id": "install_preseed_debconf",
       "community": 1,
-      "community_name": "log",
+      "community_name": "pkg_first",
       "norm_label": "preseed_debconf()"
-    },
-    {
-      "label": "setup_share_dir()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L610",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_setup_share_dir",
-      "community": 1,
-      "community_name": "log",
-      "norm_label": "setup_share_dir()"
-    },
-    {
-      "label": "wait_tailscale_login()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L977",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_wait_tailscale_login",
-      "community": 1,
-      "community_name": "log",
-      "norm_label": "wait_tailscale_login()"
-    },
-    {
-      "label": "warn()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L47",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_warn",
-      "community": 1,
-      "community_name": "log",
-      "norm_label": "warn()"
-    },
-    {
-      "label": "write_smb_conf()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L663",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_write_smb_conf",
-      "community": 1,
-      "community_name": "log",
-      "norm_label": "write_smb_conf()"
     },
     {
       "label": "README.md",
@@ -341,18 +251,18 @@
       "_origin": "ast",
       "id": "readme",
       "community": 10,
-      "community_name": "NASPI",
+      "community_name": "NASPI \u00b7 VERGEN TECHNOLOGY",
       "norm_label": "readme.md"
     },
     {
       "label": "Comandi",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L36",
+      "source_location": "L44",
       "_origin": "ast",
       "id": "readme_comandi",
       "community": 10,
-      "community_name": "NASPI",
+      "community_name": "NASPI \u00b7 VERGEN TECHNOLOGY",
       "norm_label": "comandi"
     },
     {
@@ -363,19 +273,30 @@
       "_origin": "ast",
       "id": "readme_installazione_un_comando",
       "community": 10,
-      "community_name": "NASPI",
+      "community_name": "NASPI \u00b7 VERGEN TECHNOLOGY",
       "norm_label": "installazione (un comando)"
     },
     {
-      "label": "NASPI",
+      "label": "NASPI \u00b7 VERGEN TECHNOLOGY",
       "file_type": "document",
       "source_file": "README.md",
       "source_location": "L1",
       "_origin": "ast",
-      "id": "readme_naspi",
+      "id": "readme_naspi_vergen_technology",
       "community": 10,
-      "community_name": "NASPI",
-      "norm_label": "naspi"
+      "community_name": "NASPI \u00b7 VERGEN TECHNOLOGY",
+      "norm_label": "naspi \u00b7 vergen technology"
+    },
+    {
+      "label": "Pannello web",
+      "file_type": "document",
+      "source_file": "README.md",
+      "source_location": "L36",
+      "_origin": "ast",
+      "id": "readme_pannello_web",
+      "community": 10,
+      "community_name": "NASPI \u00b7 VERGEN TECHNOLOGY",
+      "norm_label": "pannello web"
     },
     {
       "label": "Pi 1: alimentazione (obbligatorio)",
@@ -385,7 +306,7 @@
       "_origin": "ast",
       "id": "readme_pi_1_alimentazione_obbligatorio",
       "community": 10,
-      "community_name": "NASPI",
+      "community_name": "NASPI \u00b7 VERGEN TECHNOLOGY",
       "norm_label": "pi 1: alimentazione (obbligatorio)"
     },
     {
@@ -396,25 +317,25 @@
       "_origin": "ast",
       "id": "readme_ssd_usb",
       "community": 10,
-      "community_name": "NASPI",
+      "community_name": "NASPI \u00b7 VERGEN TECHNOLOGY",
       "norm_label": "ssd usb"
     },
     {
       "label": "Windows",
       "file_type": "document",
       "source_file": "README.md",
-      "source_location": "L46",
+      "source_location": "L55",
       "_origin": "ast",
       "id": "readme_windows",
       "community": 10,
-      "community_name": "NASPI",
+      "community_name": "NASPI \u00b7 VERGEN TECHNOLOGY",
       "norm_label": "windows"
     },
     {
       "label": "cmdline_set()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L174",
+      "source_location": "L265",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -429,7 +350,7 @@
       "label": "config_set()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L161",
+      "source_location": "L252",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -444,7 +365,7 @@
       "label": "usb_ssd_stable()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L193",
+      "source_location": "L284",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -456,10 +377,40 @@
       "norm_label": "usb_ssd_stable()"
     },
     {
+      "label": "install_usb_automount()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L460",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_install_usb_automount",
+      "community": 12,
+      "community_name": "setup_share_dir",
+      "norm_label": "install_usb_automount()"
+    },
+    {
+      "label": "setup_share_dir()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L695",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_setup_share_dir",
+      "community": 12,
+      "community_name": "setup_share_dir",
+      "norm_label": "setup_share_dir()"
+    },
+    {
       "label": "detect_user()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L74",
+      "source_location": "L165",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -471,25 +422,10 @@
       "norm_label": "detect_user()"
     },
     {
-      "label": "die()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L48",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_die",
-      "community": 2,
-      "community_name": "main",
-      "norm_label": "die()"
-    },
-    {
       "label": "lower_gpu_mem()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L140",
+      "source_location": "L231",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -504,7 +440,7 @@
       "label": "main()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L1275",
+      "source_location": "L1611",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -519,7 +455,7 @@
       "label": "need_root()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L70",
+      "source_location": "L161",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -534,7 +470,7 @@
       "label": "print_report()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L1266",
+      "source_location": "L1602",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -549,7 +485,7 @@
       "label": "save_creds()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L647",
+      "source_location": "L732",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -579,7 +515,7 @@
       "label": "smb_password()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L626",
+      "source_location": "L711",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -594,7 +530,7 @@
       "label": "tune_system()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L229",
+      "source_location": "L320",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -606,10 +542,40 @@
       "norm_label": "tune_system()"
     },
     {
+      "label": "wait_tailscale_login()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L1067",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_wait_tailscale_login",
+      "community": 2,
+      "community_name": "main",
+      "norm_label": "wait_tailscale_login()"
+    },
+    {
+      "label": "write_avahi()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L820",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_write_avahi",
+      "community": 2,
+      "community_name": "main",
+      "norm_label": "write_avahi()"
+    },
+    {
       "label": "write_cli()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L1011",
+      "source_location": "L1102",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -621,10 +587,55 @@
       "norm_label": "write_cli()"
     },
     {
+      "label": "write_motd()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L1511",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_write_motd",
+      "community": 2,
+      "community_name": "main",
+      "norm_label": "write_motd()"
+    },
+    {
+      "label": "write_smb_conf()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L748",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_write_smb_conf",
+      "community": 2,
+      "community_name": "main",
+      "norm_label": "write_smb_conf()"
+    },
+    {
+      "label": "write_ui_lib()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L1096",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_write_ui_lib",
+      "community": 2,
+      "community_name": "main",
+      "norm_label": "write_ui_lib()"
+    },
+    {
       "label": "bin_runs()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L820",
+      "source_location": "L910",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -636,10 +647,40 @@
       "norm_label": "bin_runs()"
     },
     {
+      "label": "bring_up_tailscale()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L1045",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_bring_up_tailscale",
+      "community": 3,
+      "community_name": "install_tailscale",
+      "norm_label": "bring_up_tailscale()"
+    },
+    {
+      "label": "ensure_swap()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L212",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_ensure_swap",
+      "community": 3,
+      "community_name": "install_tailscale",
+      "norm_label": "ensure_swap()"
+    },
+    {
       "label": "http_get()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L287",
+      "source_location": "L378",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -654,7 +695,7 @@
       "label": "install_format_tool()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L1248",
+      "source_location": "L1584",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -669,7 +710,7 @@
       "label": "install_static_tailscale()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L833",
+      "source_location": "L923",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -684,7 +725,7 @@
       "label": "install_tailscale()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L901",
+      "source_location": "L991",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -699,7 +740,7 @@
       "label": "is_armv6()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L106",
+      "source_location": "L197",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -711,10 +752,40 @@
       "norm_label": "is_armv6()"
     },
     {
+      "label": "run_to()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L149",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_run_to",
+      "community": 3,
+      "community_name": "install_tailscale",
+      "norm_label": "run_to()"
+    },
+    {
+      "label": "set_hostname()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L178",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_set_hostname",
+      "community": 3,
+      "community_name": "install_tailscale",
+      "norm_label": "set_hostname()"
+    },
+    {
       "label": "set_ts_flags()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L878",
+      "source_location": "L968",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -726,10 +797,25 @@
       "norm_label": "set_ts_flags()"
     },
     {
+      "label": "start_tailscaled()",
+      "file_type": "code",
+      "source_file": "install.sh",
+      "source_location": "L982",
+      "metadata": {
+        "language": "bash",
+        "kind": "bash_function"
+      },
+      "_origin": "ast",
+      "id": "install_start_tailscaled",
+      "community": 3,
+      "community_name": "install_tailscale",
+      "norm_label": "start_tailscaled()"
+    },
+    {
       "label": "enable_boot()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L767",
+      "source_location": "L857",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -737,74 +823,14 @@
       "_origin": "ast",
       "id": "install_enable_boot",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "start_samba",
       "norm_label": "enable_boot()"
-    },
-    {
-      "label": "ensure_swap()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L121",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_ensure_swap",
-      "community": 4,
-      "community_name": "skip",
-      "norm_label": "ensure_swap()"
-    },
-    {
-      "label": "run_to()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L58",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_run_to",
-      "community": 4,
-      "community_name": "skip",
-      "norm_label": "run_to()"
-    },
-    {
-      "label": "set_hostname()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L87",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_set_hostname",
-      "community": 4,
-      "community_name": "skip",
-      "norm_label": "set_hostname()"
-    },
-    {
-      "label": "skip()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L49",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_skip",
-      "community": 4,
-      "community_name": "skip",
-      "norm_label": "skip()"
     },
     {
       "label": "start_samba()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L803",
+      "source_location": "L893",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -812,44 +838,14 @@
       "_origin": "ast",
       "id": "install_start_samba",
       "community": 4,
-      "community_name": "skip",
+      "community_name": "start_samba",
       "norm_label": "start_samba()"
-    },
-    {
-      "label": "start_tailscaled()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L892",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_start_tailscaled",
-      "community": 4,
-      "community_name": "skip",
-      "norm_label": "start_tailscaled()"
-    },
-    {
-      "label": "write_avahi()",
-      "file_type": "code",
-      "source_file": "install.sh",
-      "source_location": "L735",
-      "metadata": {
-        "language": "bash",
-        "kind": "bash_function"
-      },
-      "_origin": "ast",
-      "id": "install_write_avahi",
-      "community": 4,
-      "community_name": "skip",
-      "norm_label": "write_avahi()"
     },
     {
       "label": "ts_authurl()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L953",
+      "source_location": "L1043",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -864,7 +860,7 @@
       "label": "ts_field()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L944",
+      "source_location": "L1034",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -879,7 +875,7 @@
       "label": "ts_state()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L952",
+      "source_location": "L1042",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -905,12 +901,23 @@
       "label": "Connect-Nas()",
       "file_type": "code",
       "source_file": "windows/backup-desktop.ps1",
-      "source_location": "L22",
+      "source_location": "L45",
       "_origin": "ast",
       "id": "windows_backup_desktop_connect_nas",
       "community": 6,
       "community_name": "backup-desktop.ps1",
       "norm_label": "connect-nas()"
+    },
+    {
+      "label": "Write-Brand()",
+      "file_type": "code",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L22",
+      "_origin": "ast",
+      "id": "windows_backup_desktop_write_brand",
+      "community": 6,
+      "community_name": "backup-desktop.ps1",
+      "norm_label": "write-brand()"
     },
     {
       "label": "Write-Info()",
@@ -922,6 +929,28 @@
       "community": 6,
       "community_name": "backup-desktop.ps1",
       "norm_label": "write-info()"
+    },
+    {
+      "label": "Write-Result()",
+      "file_type": "code",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L39",
+      "_origin": "ast",
+      "id": "windows_backup_desktop_write_result",
+      "community": 6,
+      "community_name": "backup-desktop.ps1",
+      "norm_label": "write-result()"
+    },
+    {
+      "label": "Write-Step()",
+      "file_type": "code",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L33",
+      "_origin": "ast",
+      "id": "windows_backup_desktop_write_step",
+      "community": 6,
+      "community_name": "backup-desktop.ps1",
+      "norm_label": "write-step()"
     },
     {
       "label": "format-usb.sh",
@@ -1107,7 +1136,7 @@
       "label": "http_pipe()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L300",
+      "source_location": "L391",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -1122,7 +1151,7 @@
       "label": "latest_static_ver()",
       "file_type": "code",
       "source_file": "install.sh",
-      "source_location": "L871",
+      "source_location": "L961",
       "metadata": {
         "language": "bash",
         "kind": "bash_function"
@@ -1258,19 +1287,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L338",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_apt_ok",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L341",
+      "source_location": "L427",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1282,19 +1299,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L342",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_apt_ok",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L344",
+      "source_location": "L429",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1306,43 +1311,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L344",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_apt_ok",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L345",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_apt_ok",
-      "target": "install_die",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L314",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_apt_prepare",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L315",
+      "source_location": "L406",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1354,43 +1323,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L323",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_apt_prepare",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L959",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_bring_up_tailscale",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L964",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_bring_up_tailscale",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L965",
+      "source_location": "L1055",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1402,67 +1335,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L967",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_bring_up_tailscale",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L83",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_detect_user",
-      "target": "install_die",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L770",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_enable_boot",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L128",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_ensure_swap",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L132",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_ensure_swap",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L136",
+      "source_location": "L227",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1474,7 +1347,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1255",
+      "source_location": "L1591",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1486,31 +1359,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1258",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_install_format_tool",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L842",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_install_static_tailscale",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L843",
+      "source_location": "L933",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1522,43 +1371,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L903",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_install_tailscale",
-      "target": "install_bin_runs",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L904",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_install_tailscale",
-      "target": "install_start_tailscaled",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L905",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_install_tailscale",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L911",
+      "source_location": "L1001",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1570,7 +1383,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L913",
+      "source_location": "L1003",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1582,19 +1395,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L914",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_install_tailscale",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L915",
+      "source_location": "L1005",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1606,31 +1407,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L921",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_install_tailscale",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L925",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_install_tailscale",
-      "target": "install_die",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L925",
+      "source_location": "L1015",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1642,7 +1419,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L935",
+      "source_location": "L1025",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1654,7 +1431,55 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L872",
+      "source_location": "L993",
+      "weight": 1.0,
+      "context": "call",
+      "_origin": "ast",
+      "source": "install_install_tailscale",
+      "target": "install_bin_runs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L994",
+      "weight": 1.0,
+      "context": "call",
+      "_origin": "ast",
+      "source": "install_install_tailscale",
+      "target": "install_start_tailscaled",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1528",
+      "weight": 1.0,
+      "context": "call",
+      "_origin": "ast",
+      "source": "install_install_web",
+      "target": "install_pkg_first",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1528",
+      "weight": 1.0,
+      "context": "call",
+      "_origin": "ast",
+      "source": "install_install_web",
+      "target": "install_pkg_installed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L962",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1666,7 +1491,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1276",
+      "source_location": "L1612",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1678,7 +1503,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1277",
+      "source_location": "L1619",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1690,7 +1515,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1278",
+      "source_location": "L1620",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1702,19 +1527,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1279",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_main",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L1280",
+      "source_location": "L1622",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1726,7 +1539,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1281",
+      "source_location": "L1623",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1738,7 +1551,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1282",
+      "source_location": "L1626",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1750,7 +1563,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1283",
+      "source_location": "L1627",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1762,7 +1575,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1284",
+      "source_location": "L1631",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1774,7 +1587,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1285",
+      "source_location": "L1634",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1786,7 +1599,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1286",
+      "source_location": "L1635",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1798,7 +1611,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1287",
+      "source_location": "L1636",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1810,7 +1623,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1288",
+      "source_location": "L1637",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1822,7 +1635,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1289",
+      "source_location": "L1638",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1834,7 +1647,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1290",
+      "source_location": "L1639",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1846,7 +1659,19 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1291",
+      "source_location": "L1642",
+      "weight": 1.0,
+      "context": "call",
+      "_origin": "ast",
+      "source": "install_main",
+      "target": "install_write_ui_lib",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1643",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1858,7 +1683,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1292",
+      "source_location": "L1644",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1870,7 +1695,31 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1293",
+      "source_location": "L1645",
+      "weight": 1.0,
+      "context": "call",
+      "_origin": "ast",
+      "source": "install_main",
+      "target": "install_write_motd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1646",
+      "weight": 1.0,
+      "context": "call",
+      "_origin": "ast",
+      "source": "install_main",
+      "target": "install_install_web",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1650",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1882,7 +1731,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1295",
+      "source_location": "L1652",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1894,7 +1743,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1296",
+      "source_location": "L1653",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1906,7 +1755,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1297",
+      "source_location": "L1655",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1918,19 +1767,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L71",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_need_root",
-      "target": "install_die",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L268",
+      "source_location": "L359",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1942,7 +1779,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L271",
+      "source_location": "L362",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -1954,67 +1791,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L275",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_pkg_first",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L281",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_pkg_first",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L1270",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_print_report",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L90",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_set_hostname",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L93",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_set_hostname",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L95",
+      "source_location": "L186",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2026,7 +1803,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L612",
+      "source_location": "L697",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2038,31 +1815,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L613",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_setup_share_dir",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L614",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_setup_share_dir",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L1301",
+      "source_location": "L1660",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2074,19 +1827,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L637",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_smb_password",
-      "target": "install_die",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L644",
+      "source_location": "L729",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2098,7 +1839,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L804",
+      "source_location": "L894",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2110,31 +1851,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L808",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_start_samba",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L811",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_start_samba",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L812",
+      "source_location": "L902",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2146,19 +1863,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L814",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_start_samba",
-      "target": "install_die",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L896",
+      "source_location": "L986",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2170,7 +1875,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L953",
+      "source_location": "L1043",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2182,7 +1887,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L952",
+      "source_location": "L1042",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2194,19 +1899,7 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L196",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_usb_ssd_stable",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L199",
+      "source_location": "L290",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
@@ -2218,96 +1911,12 @@
       "relation": "calls",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L206",
+      "source_location": "L297",
       "weight": 1.0,
       "context": "call",
       "_origin": "ast",
       "source": "install_usb_ssd_stable",
       "target": "install_cmdline_set",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L1008",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_wait_tailscale_login",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L998",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_wait_tailscale_login",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L738",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_write_avahi",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L671",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_write_smb_conf",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L674",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_write_smb_conf",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L727",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_write_smb_conf",
-      "target": "install_die",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L732",
-      "weight": 1.0,
-      "context": "call",
-      "_origin": "ast",
-      "source": "install_write_smb_conf",
-      "target": "install_warn",
       "confidence_score": 1.0
     },
     {
@@ -2340,7 +1949,7 @@
       "weight": 1.0,
       "_origin": "ast",
       "source": "readme",
-      "target": "readme_naspi",
+      "target": "readme_naspi_vergen_technology",
       "confidence_score": 1.0
     },
     {
@@ -2350,7 +1959,7 @@
       "source_location": "L20",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_naspi",
+      "source": "readme_naspi_vergen_technology",
       "target": "readme_ssd_usb",
       "confidence_score": 1.0
     },
@@ -2361,7 +1970,18 @@
       "source_location": "L36",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_naspi",
+      "source": "readme_naspi_vergen_technology",
+      "target": "readme_pannello_web",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "README.md",
+      "source_location": "L44",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "readme_naspi_vergen_technology",
       "target": "readme_comandi",
       "confidence_score": 1.0
     },
@@ -2369,10 +1989,10 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "README.md",
-      "source_location": "L46",
+      "source_location": "L55",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_naspi",
+      "source": "readme_naspi_vergen_technology",
       "target": "readme_windows",
       "confidence_score": 1.0
     },
@@ -2383,7 +2003,7 @@
       "source_location": "L6",
       "weight": 1.0,
       "_origin": "ast",
-      "source": "readme_naspi",
+      "source": "readme_naspi_vergen_technology",
       "target": "readme_installazione_un_comando",
       "confidence_score": 1.0
     },
@@ -2414,6 +2034,39 @@
       "confidence": "EXTRACTED",
       "source_file": "windows/backup-desktop.ps1",
       "source_location": "L22",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "windows_backup_desktop",
+      "target": "windows_backup_desktop_write_brand",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L33",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "windows_backup_desktop",
+      "target": "windows_backup_desktop_write_step",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L39",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "windows_backup_desktop",
+      "target": "windows_backup_desktop_write_result",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "windows/backup-desktop.ps1",
+      "source_location": "L45",
       "weight": 1.0,
       "_origin": "ast",
       "source": "windows_backup_desktop",
@@ -2534,546 +2187,7 @@
       "relation": "defines",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L1011",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_write_cli",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L106",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_is_armv6",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L111",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_ts_arch",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L121",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_ensure_swap",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L1248",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_install_format_tool",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L1266",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_print_report",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L1275",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_main",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L140",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_lower_gpu_mem",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L152",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_boot_file",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L161",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_config_set",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L174",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_cmdline_set",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L185",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_pi_model",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L193",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_usb_ssd_stable",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L229",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_tune_system",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L249",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_preseed_debconf",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L260",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_pkg_installed",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L265",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_pkg_first",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L287",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_http_get",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L300",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_http_pipe",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L313",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_apt_prepare",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L330",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_apt_ok",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L375",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_install_usb_automount",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L46",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_log",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L47",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_warn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L48",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_die",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L49",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L51",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_debian_frontend",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L52",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_debconf_noninteractive_seen",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L53",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_needrestart_mode",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L54",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_needrestart_suspend",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L55",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_ucf_force_conffold",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L56",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_apt_listchanges_frontend",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L58",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_run_to",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L610",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_setup_share_dir",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L626",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_smb_password",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L647",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_save_creds",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L663",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_write_smb_conf",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L70",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_need_root",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L735",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_write_avahi",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L74",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_detect_user",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L767",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_enable_boot",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L803",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_start_samba",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L820",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_bin_runs",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L833",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_install_static_tailscale",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L87",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_set_hostname",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L871",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_latest_static_ver",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L878",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_set_ts_flags",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L892",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_start_tailscaled",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L901",
-      "weight": 1.0,
-      "_origin": "ast",
-      "source": "install",
-      "target": "install_install_tailscale",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "defines",
-      "confidence": "EXTRACTED",
-      "source_file": "install.sh",
-      "source_location": "L944",
+      "source_location": "L1034",
       "weight": 1.0,
       "_origin": "ast",
       "source": "install",
@@ -3084,7 +2198,7 @@
       "relation": "defines",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L952",
+      "source_location": "L1042",
       "weight": 1.0,
       "_origin": "ast",
       "source": "install",
@@ -3095,7 +2209,7 @@
       "relation": "defines",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L953",
+      "source_location": "L1043",
       "weight": 1.0,
       "_origin": "ast",
       "source": "install",
@@ -3106,7 +2220,7 @@
       "relation": "defines",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L955",
+      "source_location": "L1045",
       "weight": 1.0,
       "_origin": "ast",
       "source": "install",
@@ -3117,14 +2231,542 @@
       "relation": "defines",
       "confidence": "EXTRACTED",
       "source_file": "install.sh",
-      "source_location": "L977",
+      "source_location": "L1067",
       "weight": 1.0,
       "_origin": "ast",
       "source": "install",
       "target": "install_wait_tailscale_login",
       "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1096",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_write_ui_lib",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1102",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_write_cli",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L142",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_debian_frontend",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L143",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_debconf_noninteractive_seen",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L144",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_needrestart_mode",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L145",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_needrestart_suspend",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L146",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_ucf_force_conffold",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L147",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_apt_listchanges_frontend",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L149",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_run_to",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1511",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_write_motd",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1525",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_install_web",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1584",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_install_format_tool",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1602",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_print_report",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L161",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_need_root",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L1611",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_main",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L165",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_detect_user",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L178",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_set_hostname",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L197",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_is_armv6",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L202",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_ts_arch",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L212",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_ensure_swap",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L231",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_lower_gpu_mem",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L243",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_boot_file",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L252",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_config_set",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L265",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_cmdline_set",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L276",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_pi_model",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L284",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_usb_ssd_stable",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L320",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_tune_system",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L340",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_preseed_debconf",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L351",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_pkg_installed",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L356",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_pkg_first",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L378",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_http_get",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L391",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_http_pipe",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L404",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_apt_prepare",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L416",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_apt_ok",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L460",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_install_usb_automount",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L695",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_setup_share_dir",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L711",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_smb_password",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L732",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_save_creds",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L748",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_write_smb_conf",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L820",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_write_avahi",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L857",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_enable_boot",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L893",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_start_samba",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L910",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_bin_runs",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L923",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_install_static_tailscale",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L961",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_latest_static_ver",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L968",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_set_ts_flags",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L982",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_start_tailscaled",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "defines",
+      "confidence": "EXTRACTED",
+      "source_file": "install.sh",
+      "source_location": "L991",
+      "weight": 1.0,
+      "_origin": "ast",
+      "source": "install",
+      "target": "install_install_tailscale",
+      "confidence_score": 1.0
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "a992122eb4995391926a1c3ca5e145ff2b22cea3"
+  "built_at_commit": "73388be391e2cdaad51739b677dd8030de6e2686"
 }

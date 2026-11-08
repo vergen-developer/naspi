@@ -1,4 +1,4 @@
-# NASPI
+# NASPI · VERGEN TECHNOLOGY
 
 NAS minimale per Raspberry Pi (anche **Pi 1**): cartella condivisa Samba `\\mariarosaria\nas`
 su SSD/HDD USB, accesso da fuori casa con Tailscale.
@@ -33,6 +33,14 @@ Le porte USB del Pi 1 non reggono un SSD: al collegamento la tensione crolla e i
 
 `sudo naspi diag` mostra se c'è sotto-tensione, gli errori USB e la fine dell'avvio precedente.
 
+## Pannello web
+
+Da qualsiasi PC o telefono in casa: **http://mariarosaria.local** — spazio libero, stato
+dell'SSD, alimentazione, accesso remoto e percorsi da copiare. Si aggiorna ogni minuto,
+tema chiaro/scuro automatico. Non mostra la password.
+
+Al login SSH compare un riepilogo grafico dello stato.
+
 ## Comandi
 
 | Comando | Cosa fa |
@@ -42,7 +50,12 @@ Le porte USB del Pi 1 non reggono un SSD: al collegamento la tensione crolla e i
 | `sudo naspi diag` | diagnosi alimentazione / SSD / servizi |
 | `sudo naspi mount` | rimonta l'SSD |
 | `sudo naspi format` | cancella e formatta l'SSD in ext4 |
+| `sudo naspi web` | aggiorna subito il pannello web |
 
 ## Windows
 
 `windows\backup-desktop.bat`: copia il Desktop su `\\mariarosaria\nas\backup\<PC>\Desktop`.
+
+---
+
+**VERGEN TECHNOLOGY** · NASPI v6.0

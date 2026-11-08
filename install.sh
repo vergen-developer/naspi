@@ -42,11 +42,102 @@ TS_ARMv6_PIN="1.62.0"
 WAIT_LOGIN_SECS="${NASPI_WAIT_LOGIN:-15}"
 REPO_RAW="${NASPI_REPO_RAW:-https://raw.githubusercontent.com/vergen-developer/naspi/main}"
 BOOT_CHANGED=0
+INSTALL_LOG=/var/log/naspi-install.log
 
-log()  { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
-warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
-die()  { printf '\033[1;31mXX\033[0m %s\n' "$*" >&2; exit 1; }
-skip() { printf '\n\033[1;36m[ok]\033[0m salto: %s\n' "$*"; }
+# Libreria grafica VERGEN: usata qui e installata in /usr/local/lib/naspi/ui.sh
+# (comando naspi, schermata di login SSH)
+NASPI_UI=""
+IFS= read -r -d '' NASPI_UI <<'NASPIUI' || true
+# NASPI · VERGEN TECHNOLOGY — libreria grafica terminale (condivisa)
+NASPI_VERSION="6.0"
+NASPI_BRAND="VERGEN TECHNOLOGY"
+NASPI_W=60
+if { [ -t 1 ] || [ "${NASPI_FORCE_COLOR:-0}" = "1" ]; } && [ -z "${NO_COLOR:-}" ] \
+  && { [ "${NASPI_FORCE_COLOR:-0}" = "1" ] || [ "${TERM:-dumb}" != "dumb" ]; }; then
+  _e=$'\033'
+  C0="${_e}[0m"; CB="${_e}[1m"
+  CA1="${_e}[38;5;27m"; CA2="${_e}[38;5;33m"; CA3="${_e}[38;5;39m"; CA4="${_e}[38;5;45m"; CA5="${_e}[38;5;51m"
+  CA="$CA3"; COK="${_e}[38;5;42m"; CW="${_e}[38;5;214m"; CE="${_e}[38;5;203m"; CM="${_e}[38;5;245m"
+  unset _e
+else
+  C0=""; CB=""; CA1=""; CA2=""; CA3=""; CA4=""; CA5=""; CA=""; COK=""; CW=""; CE=""; CM=""
+fi
+
+# ripete un carattere (anche multibyte) n volte, indipendente dal locale
+ui_rep() { local i=0 s=""; while [ "$i" -lt "$2" ]; do s="$s$1"; i=$((i + 1)); done; printf '%s' "$s"; }
+
+ui_cols() {
+  local c
+  c="$( (stty size </dev/tty) 2>/dev/null | awk '{print $2}')"
+  echo "${c:-80}"
+}
+
+ui_banner() {
+  local sub="${1:-NAS per Raspberry Pi}"
+  printf '\n'
+  if [ "$(ui_cols)" -ge 58 ]; then
+    printf '  %s%s%s\n' "$CA1" '██╗   ██╗███████╗██████╗  ██████╗ ███████╗███╗   ██╗' "$C0"
+    printf '  %s%s%s\n' "$CA2" '██║   ██║██╔════╝██╔══██╗██╔════╝ ██╔════╝████╗  ██║' "$C0"
+    printf '  %s%s%s\n' "$CA3" '██║   ██║█████╗  ██████╔╝██║  ███╗█████╗  ██╔██╗ ██║' "$C0"
+    printf '  %s%s%s\n' "$CA4" '╚██╗ ██╔╝██╔══╝  ██╔══██╗██║   ██║██╔══╝  ██║╚██╗██║' "$C0"
+    printf '  %s%s%s\n' "$CA5" ' ╚████╔╝ ███████╗██║  ██║╚██████╔╝███████╗██║ ╚████║' "$C0"
+    printf '  %s%s%s\n' "$CM"  '  ╚═══╝  ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝' "$C0"
+    printf '  %s                T E C H N O L O G Y%s\n' "$CB" "$C0"
+  else
+    printf '  %s%sV E R G E N%s\n' "$CB" "$CA" "$C0"
+    printf '  %sT E C H N O L O G Y%s\n' "$CB" "$C0"
+  fi
+  printf '\n  %sNASPI%s %sv%s%s  %s·%s  %s\n' "$CB$CA" "$C0" "$CM" "$NASPI_VERSION" "$C0" "$CM" "$C0" "$sub"
+  printf '  %s%s%s\n' "$CA1" "$(ui_rep '━' "$NASPI_W")" "$C0"
+}
+
+ui_header() {   # intestazione compatta (login SSH)
+  printf '\n  %s▌%s %sVERGEN%s %sTECHNOLOGY%s  %s·%s  %sNASPI%s %s%s%s\n' \
+    "$CA" "$C0" "$CB" "$C0" "$CM" "$C0" "$CM" "$C0" "$CB$CA" "$C0" "$CM" "${1:-}" "$C0"
+}
+
+ui_section() {
+  local t="$1" n=$(( NASPI_W - ${#1} - 3 ))
+  [ "$n" -lt 4 ] && n=4
+  printf '\n  %s▌%s %s%s%s %s%s%s\n' "$CA" "$C0" "$CB" "$t" "$C0" "$CM" "$(ui_rep '─' "$n")" "$C0"
+}
+
+ui_step() {     # ui_step 2 6 "Titolo"
+  printf '\n  %s%s %s/%s %s  %s%s%s\n' "$CB$CA" "■" "$1" "$2" "$C0" "$CB" "$3" "$C0"
+}
+
+ui_kv() {       # ui_kv "Etichetta" "valore" [colore]
+  printf '    %s%-13s%s %s%s%s\n' "$CM" "$1" "$C0" "${3:-}" "$2" "$C0"
+}
+
+ui_dot() {      # ui_dot ok|warn|err "testo"
+  local c="$COK"
+  case "$1" in warn) c="$CW" ;; err) c="$CE" ;; off) c="$CM" ;; esac
+  printf '%s●%s %s' "$c" "$C0" "$2"
+}
+
+ui_bar() {      # ui_bar percentuale [larghezza]
+  local p="${1:-0}" w="${2:-30}" f c="$COK"
+  case "$p" in ''|*[!0-9]*) p=0 ;; esac
+  [ "$p" -gt 100 ] && p=100
+  f=$(( p * w / 100 ))
+  [ "$p" -ge 75 ] && c="$CW"
+  [ "$p" -ge 90 ] && c="$CE"
+  printf '%s%s%s%s%s' "$c" "$(ui_rep '█' "$f")" "$CM" "$(ui_rep '░' $(( w - f )))" "$C0"
+}
+
+ui_footer() {
+  printf '\n  %s%s%s\n' "$CM" "$(ui_rep '─' "$NASPI_W")" "$C0"
+  printf '  %s%s%s %s· NASPI v%s · vergen.it%s\n\n' "$CB" "$NASPI_BRAND" "$C0" "$CM" "$NASPI_VERSION" "$C0"
+}
+
+log()  { printf '    %s›%s %s\n' "$CA" "$C0" "$*"; }
+ok()   { printf '    %s✓%s %s\n' "$COK" "$C0" "$*"; }
+skip() { printf '    %s✓%s %s%s (già fatto)%s\n' "$COK" "$C0" "$CM" "$*" "$C0"; }
+warn() { printf '    %s!%s %s%s%s\n' "$CW" "$C0" "$CW" "$*" "$C0"; }
+die()  { printf '\n    %s✗ %s%s\n\n' "$CE$CB" "$*" "$C0" >&2; exit 1; }
+NASPIUI
+eval "$NASPI_UI"
 
 export DEBIAN_FRONTEND=noninteractive
 export DEBCONF_NONINTERACTIVE_SEEN=true
@@ -183,7 +274,7 @@ cmdline_set() {
 }
 
 pi_model() {
-  tr -d '\0' < /proc/device-tree/model 2>/dev/null || echo "sconosciuto"
+  tr -d '\0' 2>/dev/null </proc/device-tree/model || echo "sconosciuto"
 }
 
 # Pi 1: le porte USB reggono poca corrente. Un SSD che assorbe troppo all'avvio
@@ -272,13 +363,13 @@ pkg_first() {
       set -e
       return 0
     fi
-    log "Installo $p — sul Pi 1 può richiedere diversi minuti, non è fermo"
-    if DEBIAN_FRONTEND=noninteractive apt-get install "${APT_OPTS[@]}" --fix-missing "$p" </dev/null; then
-      log "ok $p"
+    log "Installo ${CB}$p${C0} ${CM}(sul Pi 1 anche qualche minuto)${C0}"
+    if DEBIAN_FRONTEND=noninteractive apt-get install "${APT_OPTS[@]}" --fix-missing "$p" </dev/null >>"$INSTALL_LOG" 2>&1; then
+      ok "$p"
       set -e
       return 0
     fi
-    warn "$p non trovato, provo alternativa"
+    warn "$p non disponibile, provo un'alternativa (dettagli: $INSTALL_LOG)"
   done
   set -e
   return 1
@@ -311,19 +402,14 @@ http_pipe() {
 }
 
 apt_prepare() {
-  log "Indici apt + riparazione dpkg (attendi, niente domande)"
+  log "Aggiorno l'elenco dei pacchetti (attendi)"
   preseed_debconf
-  DEBIAN_FRONTEND=noninteractive dpkg --configure -a </dev/null >/dev/null 2>&1 || true
-  DEBIAN_FRONTEND=noninteractive apt-get -f install -y </dev/null || true
-  log "apt update in corso..."
-  if ! DEBIAN_FRONTEND=noninteractive apt-get update \
-      -o Acquire::Check-Valid-Until=false \
-      -o Acquire::AllowReleaseInfoChange=true \
-      -o Acquire::Retries=3 </dev/null; then
-    warn "apt update instabile, riprovo"
-    DEBIAN_FRONTEND=noninteractive apt-get update -o Acquire::Check-Valid-Until=false \
-      -o Acquire::AllowReleaseInfoChange=true </dev/null \
-      || warn "uso la cache apt già presente"
+  DEBIAN_FRONTEND=noninteractive dpkg --configure -a </dev/null >>"$INSTALL_LOG" 2>&1 || true
+  DEBIAN_FRONTEND=noninteractive apt-get -f install -y </dev/null >>"$INSTALL_LOG" 2>&1 || true
+  local opts=(-o Acquire::Check-Valid-Until=false -o Acquire::AllowReleaseInfoChange=true -o Acquire::Retries=3)
+  if ! DEBIAN_FRONTEND=noninteractive apt-get update "${opts[@]}" </dev/null >>"$INSTALL_LOG" 2>&1; then
+    warn "Rete instabile, riprovo"
+    DEBIAN_FRONTEND=noninteractive apt-get update "${opts[@]}" </dev/null >>"$INSTALL_LOG" 2>&1       || warn "Uso l'elenco pacchetti gia presente"
   fi
 }
 
@@ -339,7 +425,6 @@ apt_ok() {
     return 0
   fi
   apt_prepare
-  log "Pacchetti (con alternative se un nome manca)"
 
   pkg_first ca-certificates openssl || warn "certificati HTTPS assenti"
   pkg_first curl wget || die "Né curl né wget: impossibile scaricare Tailscale"
@@ -369,7 +454,7 @@ apt_ok() {
   pkg_first dosfstools || true
   pkg_first usbutils || true
   pkg_first raspi-utils libraspberrypi-bin || true
-  log "Pacchetti pronti, continuo"
+  ok "Pacchetti pronti"
 }
 
 install_usb_automount() {
@@ -663,7 +748,7 @@ EOF
 write_smb_conf() {
   local guest="no" mapg="Never"
   if [ "${NASPI_GUEST:-0}" = "1" ]; then guest="yes"; mapg="Bad User"; fi
-  local marker="# naspi-conf v3 guest=${guest}"
+  local marker="# naspi-conf v4 guest=${guest}"
   if [ -f /etc/samba/smb.conf ] \
     && grep -qF "$marker" /etc/samba/smb.conf \
     && pdbedit -L 2>/dev/null | grep -q "^${NAS_USER}:"; then
@@ -681,7 +766,7 @@ ${marker}
 # Generato da NASPI: rilancia install.sh per rigenerarlo (backup: smb.conf.naspi.bak)
 [global]
    workgroup = WORKGROUP
-   server string = ${HOST_NAME}
+   server string = ${HOST_NAME} - NASPI by VERGEN TECHNOLOGY
    netbios name = ${HOST_NAME}
    server role = standalone server
    security = user
@@ -734,7 +819,7 @@ EOF
 
 write_avahi() {
   if [ -f /etc/avahi/services/naspi.service ] \
-    && grep -q '_smb._tcp' /etc/avahi/services/naspi.service; then
+    && grep -q '_http._tcp' /etc/avahi/services/naspi.service; then
     skip "Avahi già configurato"
     return 0
   fi
@@ -754,6 +839,11 @@ write_avahi() {
   <service>
     <type>_smb._tcp</type>
     <port>445</port>
+  </service>
+  <service>
+    <type>_http._tcp</type>
+    <port>80</port>
+    <txt-record>path=/</txt-record>
   </service>
   <service>
     <type>_device-info._tcp</type>
@@ -913,7 +1003,7 @@ install_tailscale() {
   if ! is_armv6; then
     log "Installazione Tailscale (script ufficiale, max 3 min)"
     if http_get https://tailscale.com/install.sh /tmp/naspi-ts-install.sh \
-      && run_to 180 sh /tmp/naspi-ts-install.sh; then
+      && run_to 180 sh /tmp/naspi-ts-install.sh >>"$INSTALL_LOG" 2>&1; then
       if start_tailscaled; then
         return 0
       fi
@@ -1000,249 +1090,495 @@ wait_tailscale_login() {
   fi
 
   echo "$url" > "${NASPI_DIR}/tailscale.url"
-  echo
-  echo "----------------------------------------------"
-  echo "  LOGIN TAILSCALE (apri questo link)"
-  echo "  ${url}"
-  echo "----------------------------------------------"
-  log "Non resto in attesa. Se il link è scaduto: sudo naspi login"
+  ok "Link di accesso pronto: è nel riepilogo qui sotto (scaduto? sudo naspi login)"
+}
+
+write_ui_lib() {
+  mkdir -p /usr/local/lib/naspi
+  printf '%s' "$NASPI_UI" > /usr/local/lib/naspi/ui.sh
+  chmod 644 /usr/local/lib/naspi/ui.sh
 }
 
 write_cli() {
   cat > /usr/local/bin/naspi <<'CLI'
 #!/bin/bash
-set -euo pipefail
+# NASPI · VERGEN TECHNOLOGY — comando di gestione del NAS
+set -uo pipefail
 CRED=/etc/naspi/credentials
 HOST_NAME=mariarosaria
 SHARE_NAME=nas
 SHARE_PATH=/srv/nas
 NAS_USER=pi
-SMB_PASS="(vedi /etc/naspi/credentials)"
-if [ -f "$CRED" ]; then
-  # shellcheck disable=SC1090
-  . "$CRED"
-fi
+SMB_PASS=""
+WWW=/var/lib/naspi/www
+[ -r "$CRED" ] && . "$CRED"
+. /usr/local/lib/naspi/ui.sh 2>/dev/null || { echo "NASPI: libreria grafica mancante, rilancia install.sh"; exit 1; }
+IS_ROOT=0; [ "$(id -u)" -eq 0 ] && IS_ROOT=1
+BS='\'
+WIN_PATH="${BS}${BS}${HOST_NAME}${BS}${SHARE_NAME}"
 
-if [ "${1:-}" = "login" ]; then
-  [ "$(id -u)" -eq 0 ] || { echo "Esegui: sudo naspi login"; exit 1; }
-  echo
-  echo "Genero un nuovo link Tailscale (il vecchio scade in pochi minuti)..."
-  rm -f /etc/naspi/tailscale.url
-  tailscale logout >/dev/null 2>&1 || true
-  if command -v timeout >/dev/null 2>&1; then
-    timeout 25 tailscale up --accept-dns=false --hostname="${HOST_NAME}" >/tmp/naspi-tailscale.up 2>&1 || true
-  else
-    tailscale up --accept-dns=false --hostname="${HOST_NAME}" >/tmp/naspi-tailscale.up 2>&1 || true
-  fi
-  url=""
-  i=0
-  while [ "$i" -lt 8 ]; do
-    url="$(tailscale status --json 2>/dev/null | tr -d '\n' \
-      | sed -n 's/.*"AuthURL"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)"
-    if [ -z "$url" ] && [ -f /tmp/naspi-tailscale.up ]; then
-      url="$(grep -oE 'https://login\.tailscale\.com/[^[:space:]]+' /tmp/naspi-tailscale.up | head -1 || true)"
-    fi
-    [ -n "$url" ] && break
-    sleep 1
-    i=$((i + 1))
-  done
-  if [ -n "$url" ]; then
-    echo "$url" > /etc/naspi/tailscale.url
-    echo
-    echo "----------------------------------------------"
-    echo "  LOGIN TAILSCALE (apri questo link ORA)"
-    echo "  ${url}"
-    echo "----------------------------------------------"
-  else
-    echo "Nessun URL. Prova: sudo tailscale logout && sudo tailscale up"
-  fi
-  exit 0
-fi
+need_root() { [ "$IS_ROOT" = "1" ] || die "Serve root: sudo naspi ${1:-}"; }
+to() { local s="$1"; shift; if command -v timeout >/dev/null 2>&1; then timeout "$s" "$@"; else "$@"; fi; }
 
-need_root() { [ "$(id -u)" -eq 0 ] || { echo "Esegui: sudo naspi $1"; exit 1; }; }
-
-power_report() {
+# ---------------------------------------------------------------- stato
+collect() {
+  S_MODEL="$(tr -d '\0' 2>/dev/null </proc/device-tree/model || uname -m)"
+  S_LANIP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+  S_UP="$(uptime -p 2>/dev/null | sed 's/^up //; s/ hours\?/ h/; s/ minutes\?/ min/; s/ days\?/ g/; s/ weeks\?/ sett/')"
   local t
+  t="$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || true)"
+  S_TEMP=""; [ -n "$t" ] && S_TEMP="$((t / 1000))"
+  S_MEM="$(free -m 2>/dev/null | awk '/^Mem:/{printf "%d / %d MB", $3, $2}')"
+
+  S_SIZE="?"; S_USED="?"; S_AVAIL="?"; S_PCT=0
+  read -r S_SIZE S_USED S_AVAIL S_PCT < <(df -Ph "$SHARE_PATH" 2>/dev/null \
+    | awk 'NR==2{gsub("%","",$5); print $2, $3, $4, $5}') || true
+  case "${S_PCT:-}" in ''|*[!0-9]*) S_PCT=0 ;; esac
+  S_SIZE="${S_SIZE:-?}"; S_USED="${S_USED:-?}"; S_AVAIL="${S_AVAIL:-?}"
+  S_SRC="$(findmnt -n -o SOURCE "$SHARE_PATH" 2>/dev/null || true)"
+  S_FS="$(findmnt -n -o FSTYPE "$SHARE_PATH" 2>/dev/null || true)"
+  S_DISKNAME=""
+  if [ -n "$S_SRC" ]; then
+    local pk
+    pk="$(lsblk -no PKNAME "$S_SRC" 2>/dev/null | head -1)"
+    S_DISKNAME="$(lsblk -dno VENDOR,MODEL "/dev/${pk:-$(basename "$S_SRC")}" 2>/dev/null | tr -s ' ' | sed 's/^ //; s/ $//')"
+  fi
+
+  S_SMB="$(systemctl is-active smbd 2>/dev/null || true)"
+  [ "$S_SMB" = "active" ] || S_SMB="$(systemctl is-active samba 2>/dev/null || echo inactive)"
+  local j
+  j="$(to 4 tailscale status --json 2>/dev/null | tr -d '\n' || true)"
+  S_TS="$(printf '%s' "$j" | sed -n 's/.*"BackendState"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  S_TSURL="$(printf '%s' "$j" | sed -n 's/.*"AuthURL"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  S_TSDNS="$(printf '%s' "$j" | sed -n 's/.*"Self"[[:space:]]*:[[:space:]]*{[^}]*"DNSName"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)"
+  S_TSDNS="${S_TSDNS%.}"
+  S_TSIP="$(to 4 tailscale ip -4 2>/dev/null | head -1 || true)"
+  [ -n "$S_TSURL" ] || S_TSURL="$(cat /etc/naspi/tailscale.url 2>/dev/null || true)"
+
+  S_PWR="na"
   if command -v vcgencmd >/dev/null 2>&1; then
     t="$(vcgencmd get_throttled 2>/dev/null | sed 's/.*=//')"
     case "$t" in
-      0x0|"") echo "  Alimentazione: OK (nessun sotto-tensione rilevato)" ;;
-      *)
-        if [ $(( t & 0x1 )) -ne 0 ]; then
-          echo "  Alimentazione: SOTTO-TENSIONE ADESSO ($t) → disco instabile/riavvii"
-        elif [ $(( t & 0x10000 )) -ne 0 ]; then
-          echo "  Alimentazione: c'è stata SOTTO-TENSIONE dall'avvio ($t)"
-        else
-          echo "  Alimentazione: throttling ($t)"
-        fi
-        echo "    → alimentatore 5V ≥2.5A buono + SSD su hub USB ALIMENTATO o cavo Y"
-        ;;
+      0x0) S_PWR="ok" ;;
+      0x*) if [ $(( t & 0x1 )) -ne 0 ]; then S_PWR="now"
+           elif [ $(( t & 0x10000 )) -ne 0 ]; then S_PWR="past"
+           else S_PWR="thr"; fi ;;
     esac
   fi
-  if journalctl -k -b 0 --no-pager 2>/dev/null | grep -qiE 'under-?voltage'; then
-    echo "  Kernel: segnalata sotto-tensione in questo avvio"
+  if [ "$S_PWR" != "now" ] && journalctl -k -b 0 --no-pager 2>/dev/null | grep -qiE 'under-?voltage'; then
+    S_PWR="past"
   fi
 }
 
-if [ "${1:-}" = "mount" ]; then
-  need_root mount
-  /usr/local/sbin/naspi-usb-mount 20
-  findmnt "$SHARE_PATH" || echo "SSD non montato: sudo naspi diag"
-  exit 0
-fi
+pwr_text() {
+  case "$S_PWR" in
+    ok)   echo "ok|stabile" ;;
+    now)  echo "err|SOTTO-TENSIONE ora: alimentatore/cavo Y" ;;
+    past) echo "warn|cali di tensione dall'avvio: controlla alimentatore/cavo Y" ;;
+    thr)  echo "warn|CPU rallentata (temperatura)" ;;
+    *)    echo "off|non misurabile su questo modello" ;;
+  esac
+}
 
-if [ "${1:-}" = "format" ]; then
-  need_root format
-  shift
-  exec /usr/local/sbin/naspi-format "$@"
-fi
+ts_text() {
+  case "$S_TS" in
+    Running)   echo "ok|connesso${S_TSIP:+ · $S_TSIP}" ;;
+    NeedsLogin|NoState) echo "warn|da collegare: sudo naspi login" ;;
+    Stopped)   echo "warn|fermo: sudo tailscale up" ;;
+    "")        echo "err|non attivo" ;;
+    *)         echo "warn|$S_TS" ;;
+  esac
+}
 
-if [ "${1:-}" = "diag" ]; then
-  need_root diag
-  echo
-  echo "== Modello: $(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
-  echo "== Uptime: $(uptime -p 2>/dev/null)"
-  power_report
-  echo
-  echo "== Dischi"
-  lsblk -o NAME,SIZE,TYPE,TRAN,FSTYPE,LABEL,MOUNTPOINT 2>/dev/null
-  echo
-  echo "== /srv/nas"
-  findmnt "$SHARE_PATH" || echo "  non montato (microSD)"
-  df -h "$SHARE_PATH" | tail -1
-  echo
-  echo "== USB"
-  lsusb 2>/dev/null || true
-  echo
-  echo "== Ultimi eventi NASPI USB"
-  journalctl -t naspi-usb -n 15 --no-pager 2>/dev/null || true
-  echo
-  echo "== Kernel: USB/disco (reset, disconnessioni, errori I/O)"
-  journalctl -k -b 0 --no-pager 2>/dev/null \
-    | grep -iE 'usb [0-9-]+.*(disconnect|reset|new)|under-?voltage|I/O error|EXT4-fs error|over-current|uas|usb-storage' \
-    | tail -20 || true
-  if journalctl --list-boots --no-pager 2>/dev/null | grep -q '^ *-1'; then
-    echo
-    echo "== Fine dell'avvio precedente (se si è riavviato da solo, guarda qui)"
-    journalctl -b -1 -n 8 --no-pager 2>/dev/null || true
-  fi
-  echo
-  echo "== Servizi"
-  for s in smbd nmbd avahi-daemon tailscaled; do
-    printf '  %-14s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null)"
-  done
-  exit 0
-fi
-
-hn="${HOST_NAME}.local"
-ts_json="$(tailscale status --json 2>/dev/null | tr -d '\n' || true)"
-ts_state="$(printf '%s' "$ts_json" | sed -n 's/.*"BackendState"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)"
-ts_url="$(printf '%s' "$ts_json" | sed -n 's/.*"AuthURL"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)"
-ts_dns="$(printf '%s' "$ts_json" | sed -n 's/.*"DNSName"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)"
-ts_dns="${ts_dns%.}"
-[ -n "$ts_url" ] || ts_url="$(cat /etc/naspi/tailscale.url 2>/dev/null || true)"
-disk="$(findmnt -n -o SOURCE,FSTYPE "$SHARE_PATH" 2>/dev/null || echo "microSD ${SHARE_PATH}")"
-
-echo
-echo "=========================================================="
-echo "  NASPI pronto — cartella condivisa"
-echo "=========================================================="
-echo
-echo "  Hostname:     ${HOST_NAME}"
-echo "  Percorso:     \\\\${HOST_NAME}\\${SHARE_NAME}"
-echo "  Sul Pi:       ${SHARE_PATH}"
-echo "  Disco:        ${disk}"
-echo "  Utente:       ${NAS_USER}"
-echo "  Password:     ${SMB_PASS}"
-echo
-echo "  Al spegnimento/riavvio Samba e Tailscale partono da soli."
-echo
-echo "----------------------------------------------------------"
-echo "  1) STESSA RETE (WiFi / cavo di casa)"
-echo "----------------------------------------------------------"
-echo "  WINDOWS"
-echo "    1. Apri Esplora file"
-echo "    2. Nella barra indirizzi incolla:"
-echo "         \\\\${HOST_NAME}\\${SHARE_NAME}"
-echo "    3. Invio"
-echo "    4. Utente: ${NAS_USER}"
-echo "       Password: ${SMB_PASS}"
-echo "    Unità permanente (CMD):"
-echo "         net use Z: \\\\${HOST_NAME}\\${SHARE_NAME} /user:${NAS_USER} ${SMB_PASS} /persistent:yes"
-echo
-echo "  MAC"
-echo "    Finder → Vai → Connetti al server…"
-echo "         smb://${HOST_NAME}.local/${SHARE_NAME}"
-echo "    Connetti → utente ${NAS_USER} / password ${SMB_PASS}"
-echo
-echo "  LINUX"
-echo "         smb://${HOST_NAME}.local/${SHARE_NAME}"
-echo
-echo "  (se non apre: \\\\${HOST_NAME}.local\\${SHARE_NAME})"
-echo
-echo "  SSD USB: collegalo e si monta da solo su /srv/nas (ext4/exFAT/NTFS/FAT)."
-echo "  Disco nuovo/vuoto: formattato ext4 in automatico. Con dati: mai toccato."
-echo "  Pi 1: SSD su hub USB ALIMENTATO (o cavo Y) + alimentatore 5V ≥2.5A,"
-echo "  altrimenti il Pi si riavvia o perde il disco (limite hardware)."
-if [ "$(id -u)" -eq 0 ]; then power_report; fi
-echo
-echo "----------------------------------------------------------"
-echo "  2) FUORI CASA (Tailscale)"
-echo "----------------------------------------------------------"
-if [ "${ts_state:-}" = "Running" ]; then
-  echo "  Tailscale:    connesso"
-  echo "    1. Sul PC: https://tailscale.com/download"
-  echo "    2. Accedi con lo STESSO account del Raspberry"
-  echo "    3. Apri (hostname, non IP):"
-  echo "         Windows:  \\\\${HOST_NAME}\\${SHARE_NAME}"
-  echo "         Mac:      smb://${HOST_NAME}/${SHARE_NAME}"
-  if [ -n "${ts_dns}" ]; then
-    echo "         Windows:  \\\\${ts_dns}\\${SHARE_NAME}"
-    echo "         Mac:      smb://${ts_dns}/${SHARE_NAME}"
-  fi
-else
-  echo "  Tailscale:    da collegare (${ts_state:-n/d})"
-  if [ -n "${ts_url:-}" ]; then
-    echo "    Apri questo link SUBITO (scade in pochi minuti):"
-    echo "         ${ts_url}"
-    echo "    Se dice Session expired:  sudo naspi login"
-    echo "    Poi sul PC: https://tailscale.com/download (stesso account)"
-    echo "    Percorso:  \\\\${HOST_NAME}\\${SHARE_NAME}"
-    echo "    Alla fine:  sudo naspi"
+disk_text() {
+  if [ -n "$S_SRC" ]; then
+    echo "ok|SSD esterno${S_DISKNAME:+ $S_DISKNAME} · ${S_FS}"
   else
-    echo "    Sul Pi:  sudo naspi login"
-    echo "    Poi apri l'URL, approva, e sul PC installa Tailscale."
-    echo "    Percorso:  \\\\${HOST_NAME}\\${SHARE_NAME}"
+    echo "warn|microSD (SSD non collegato)"
   fi
-fi
-if grep -q 'TS_USERSPACE=1' "$CRED" 2>/dev/null; then
+}
+
+dot_line() { local x="$1"; ui_dot "${x%%|*}" "${x#*|}"; }
+
+# ---------------------------------------------------------------- comandi
+cmd_login() {
+  need_root login
+  ui_header "Accesso remoto"
+  log "Genero un nuovo link Tailscale (il precedente scade in pochi minuti)"
+  rm -f /etc/naspi/tailscale.url
+  tailscale logout >/dev/null 2>&1 || true
+  to 25 tailscale up --accept-dns=false --hostname="${HOST_NAME}" </dev/null >/tmp/naspi-tailscale.up 2>&1 || true
+  local url="" i=0
+  while [ "$i" -lt 8 ]; do
+    url="$(tailscale status --json 2>/dev/null | tr -d '\n' \
+      | sed -n 's/.*"AuthURL"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)"
+    [ -z "$url" ] && url="$(grep -oE 'https://login\.tailscale\.com/[^[:space:]]+' /tmp/naspi-tailscale.up 2>/dev/null | head -1 || true)"
+    [ -n "$url" ] && break
+    sleep 1; i=$((i + 1))
+  done
+  if [ -n "$url" ]; then
+    echo "$url" > /etc/naspi/tailscale.url
+    ui_section "Apri questo link ORA"
+    printf '\n    %s%s%s\n\n' "$CB$CA" "$url" "$C0"
+    log "Accedi e approva, poi installa Tailscale sul PC con lo stesso account"
+  elif [ "$(tailscale status --json 2>/dev/null | tr -d '\n' | sed -n 's/.*"BackendState"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)" = "Running" ]; then
+    ok "Tailscale già connesso"
+  else
+    warn "Nessun link ricevuto. Prova: sudo tailscale logout && sudo tailscale up"
+  fi
+  ui_footer
+}
+
+cmd_summary() {
+  collect
+  ui_banner "${HOST_NAME}"
+  ui_section "Stato"
+  printf '    '; dot_line "ok|online"; printf '   %s%s%s\n' "$CM" "${S_LANIP:-senza rete}" "$C0"
+  ui_kv "Disco" "$(dot_line "$(disk_text)")"
+  printf '    %-13s %s  %s%s%%%s  %s%s usati di %s · %s liberi%s\n' "" "$(ui_bar "$S_PCT" 24)" "$CB" "$S_PCT" "$C0" "$CM" "$S_USED" "$S_SIZE" "$S_AVAIL" "$C0"
+  ui_kv "Condivisione" "$(if [ "$S_SMB" = active ]; then ui_dot ok attiva; else ui_dot err "ferma: sudo systemctl restart smbd"; fi)"
+  ui_kv "Fuori casa" "$(dot_line "$(ts_text)")"
+  ui_kv "Alimentazione" "$(dot_line "$(pwr_text)")"
+
+  ui_section "Credenziali"
+  ui_kv "Utente" "$NAS_USER" "$CB"
+  if [ "$IS_ROOT" = "1" ] && [ -n "$SMB_PASS" ]; then
+    ui_kv "Password" "$SMB_PASS" "$CB"
+  else
+    ui_kv "Password" "visibile con: sudo naspi" "$CM"
+  fi
+
+  ui_section "Collegati dalla stessa rete"
+  ui_kv "Windows" "$WIN_PATH" "$CB$CA"
+  ui_kv "Mac" "smb://${HOST_NAME}.local/${SHARE_NAME}" "$CB$CA"
+  ui_kv "Pannello web" "http://${HOST_NAME}.local" "$CB$CA"
+  ui_kv "Unita Z:" "net use Z: ${WIN_PATH} /user:${NAS_USER} * /persistent:yes" "$CM"
+
+  ui_section "Collegati da fuori casa"
+  if [ "$S_TS" = "Running" ]; then
+    ui_kv "1." "installa Tailscale sul PC: tailscale.com/download"
+    ui_kv "2." "accedi con lo STESSO account del NAS"
+    ui_kv "3. Windows" "$WIN_PATH" "$CB$CA"
+    [ -n "$S_TSDNS" ] && ui_kv "   oppure" "${BS}${BS}${S_TSDNS}${BS}${SHARE_NAME}" "$CA"
+  elif [ -n "$S_TSURL" ]; then
+    ui_kv "Link login" "$S_TSURL" "$CB$CA"
+    ui_kv "" "scaduto? sudo naspi login" "$CM"
+  else
+    ui_kv "Attiva" "sudo naspi login" "$CB"
+  fi
+  if grep -q 'TS_USERSPACE=1' "$CRED" 2>/dev/null; then
+    ui_kv "Nota" "modalita userspace: se non apre usa ${HOST_NAME}.local in LAN" "$CM"
+  fi
+
+  ui_section "Comandi"
+  ui_kv "sudo naspi" "questo riepilogo"
+  ui_kv "naspi login" "nuovo link per l'accesso da fuori casa"
+  ui_kv "naspi diag" "diagnosi SSD, alimentazione, servizi"
+  ui_kv "naspi mount" "rimonta l'SSD"
+  ui_kv "naspi format" "cancella e formatta l'SSD"
+  ui_footer
+}
+
+cmd_motd() {
+  collect
+  ui_header "${HOST_NAME}"
+  printf '    %s  %s%s%%%s %s(%s liberi)%s   %s\n' "$(ui_bar "$S_PCT" 20)" "$CB" "$S_PCT" "$C0" "$CM" "$S_AVAIL" "$C0" "$(dot_line "$(disk_text)")"
+  printf '    %s   %s   %s\n' \
+    "$(if [ "$S_SMB" = active ]; then ui_dot ok "Condivisione"; else ui_dot err "Condivisione ferma"; fi)" \
+    "$(x="$(ts_text)"; ui_dot "${x%%|*}" "Tailscale")" \
+    "$(x="$(pwr_text)"; ui_dot "${x%%|*}" "Alimentazione")"
+  printf '    %s%s  ·  http://%s.local  ·  sudo naspi%s\n\n' "$CM" "$WIN_PATH" "$HOST_NAME" "$C0"
+}
+
+cmd_mount() {
+  need_root mount
+  ui_header "SSD"
+  /usr/local/sbin/naspi-usb-mount 20 </dev/null | sed 's/^naspi-usb: /    › /'
+  if findmnt -n "$SHARE_PATH" >/dev/null 2>&1; then
+    ok "SSD montato: $(findmnt -n -o SOURCE,FSTYPE "$SHARE_PATH")"
+  else
+    warn "SSD non montato: sudo naspi diag"
+  fi
   echo
-  echo "  Nota: modalità userspace — da remoto usa ${HOST_NAME},"
-  echo "  se non apre usa ${hn} in LAN."
-fi
-echo
-echo "  Rivedi questo riepilogo:  sudo naspi"
-echo "  Nuovo link Tailscale:     sudo naspi login"
-echo "  Problemi SSD/riavvii:     sudo naspi diag"
-echo "  Rimonta SSD:              sudo naspi mount"
-echo "  Cancella e formatta SSD:  sudo naspi format"
-echo "=========================================================="
-echo
+}
+
+cmd_diag() {
+  need_root diag
+  collect
+  ui_banner "Diagnosi"
+  ui_section "Sistema"
+  ui_kv "Modello" "$S_MODEL"
+  ui_kv "Acceso da" "${S_UP:-?}"
+  ui_kv "Temperatura" "${S_TEMP:-?} °C"
+  ui_kv "Memoria" "${S_MEM:-?}"
+  ui_kv "Alimentazione" "$(dot_line "$(pwr_text)")"
+  case "$S_PWR" in now|past)
+    ui_kv "" "alimentatore 5V ≥2.5A + SSD con cavo Y su caricatore a parte" "$CW" ;;
+  esac
+  ui_section "Dischi"
+  lsblk -o NAME,SIZE,TYPE,TRAN,FSTYPE,LABEL,MOUNTPOINT 2>/dev/null | sed 's/^/    /'
+  ui_section "Cartella condivisa"
+  ui_kv "Disco" "$(dot_line "$(disk_text)")"
+  ui_kv "Spazio" "$(ui_bar "$S_PCT" 24) ${S_PCT}%  (${S_USED} / ${S_SIZE})"
+  ui_section "USB"
+  (lsusb 2>/dev/null || echo "lsusb non disponibile") | sed 's/^/    /'
+  ui_section "Eventi SSD (NASPI)"
+  journalctl -t naspi-usb -n 12 --no-pager -o short 2>/dev/null | sed 's/^/    /' || true
+  ui_section "Kernel: USB / disco"
+  local k
+  k="$(journalctl -k -b 0 --no-pager -o short 2>/dev/null \
+    | grep -iE 'usb [0-9-]+.*(disconnect|reset)|under-?voltage|I/O error|EXT4-fs error|over-current|blk_update_request' \
+    | tail -15 || true)"
+  if [ -n "$k" ]; then printf '%s\n' "$k" | sed 's/^/    /'; else ok "nessun errore USB/disco in questo avvio"; fi
+  if journalctl --list-boots --no-pager 2>/dev/null | grep -qE '^[[:space:]]*-1'; then
+    ui_section "Fine dell'avvio precedente"
+    journalctl -b -1 -n 6 --no-pager -o short 2>/dev/null | sed 's/^/    /' || true
+    log "Righe normali di spegnimento = riavvio voluto; righe a caso = blackout/calo di tensione"
+  fi
+  ui_section "Servizi"
+  local s st
+  for s in smbd nmbd avahi-daemon tailscaled naspi-web naspi-usb-boot; do
+    st="$(systemctl is-active "$s" 2>/dev/null || true)"
+    case "$st" in
+      active) ui_kv "$s" "$(ui_dot ok attivo)" ;;
+      inactive) if [ "$s" = naspi-usb-boot ]; then ui_kv "$s" "$(ui_dot ok eseguito)"; else ui_kv "$s" "$(ui_dot err fermo)"; fi ;;
+      *) ui_kv "$s" "$(ui_dot warn "${st:-?}")" ;;
+    esac
+  done
+  ui_footer
+}
+
+h() { printf '%s' "$1" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g'; }
+
+cmd_web() {
+  need_root web
+  collect
+  mkdir -p "$WWW"
+  local d sm ts pw dk overall overall_c tsrow
+  d="$(date '+%d/%m/%Y %H:%M')"
+  local temp_txt="–"; [ -n "$S_TEMP" ] && temp_txt="${S_TEMP} °C"
+  dk="$(disk_text)"; ts="$(ts_text)"; pw="$(pwr_text)"
+  sm="ok|attiva"; [ "$S_SMB" = active ] || sm="err|ferma"
+  overall="Tutto funziona"; overall_c="ok"
+  for x in "$dk" "$ts" "$pw" "$sm"; do
+    case "${x%%|*}" in
+      err) overall="Attenzione richiesta"; overall_c="err" ;;
+      warn) [ "$overall_c" = ok ] && { overall="Funziona, con avvisi"; overall_c="warn"; } ;;
+    esac
+  done
+  tsrow=""
+  if [ "$S_TS" = "Running" ] && [ -n "$S_TSDNS" ]; then
+    tsrow="<div class=\"path\"><code>$(h "${BS}${BS}${S_TSDNS}${BS}${SHARE_NAME}")</code><button onclick=\"cp(this)\">Copia</button></div>"
+  fi
+  cat > "$WWW/index.html.tmp" <<HTML
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="60">
+<title>$(h "$HOST_NAME") · NASPI</title>
+<style>
+:root{--bg:#f3f6fb;--card:#fff;--ink:#0d1526;--mute:#62708a;--line:#e3e9f2;--track:#e7edf6;--acc:#0a63f0;--acc2:#00b3e6;--ok:#12a150;--warn:#d98a04;--err:#dc2f2f;--off:#94a0b4}
+@media (prefers-color-scheme:dark){:root{--bg:#0a1020;--card:#111a2c;--ink:#e7eef9;--mute:#8d9bb5;--line:#1e2a42;--track:#1b2740;--acc:#3d8bff;--acc2:#2dd4f5;--ok:#2ec66d;--warn:#f5a524;--err:#ff6b6b;--off:#5d6b85}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+header{background:radial-gradient(1200px 400px at 85% -40%,#18b4ff55,transparent),linear-gradient(125deg,#050d1f 0%,#0a2a6b 55%,#0a63f0 100%);color:#fff;padding:26px 16px 78px}
+.wrap{max-width:980px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#2dd4f5,#0a63f0);display:grid;place-items:center;font-weight:900;font-size:20px;box-shadow:0 6px 18px #0a63f066}
+.brand b{display:block;font-size:17px;letter-spacing:.34em;font-weight:800;line-height:1.1}
+.brand small{display:block;font-size:10px;letter-spacing:.52em;opacity:.75}
+h1{margin:26px 0 6px;font-size:clamp(26px,5vw,36px);font-weight:750;letter-spacing:-.01em}
+.sub{opacity:.82}
+.pill{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:6px 12px;border-radius:99px;background:#ffffff1f;border:1px solid #ffffff33;font-weight:600;font-size:13px}
+main{margin-top:-52px;padding:0 16px 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px;box-shadow:0 1px 2px #0000000a,0 10px 30px #0a2a6b14}
+.card h2{margin:0 0 14px;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.big{font-size:44px;font-weight:800;line-height:1;letter-spacing:-.02em}
+.big span{font-size:18px;color:var(--mute);font-weight:600;margin-left:8px;letter-spacing:0}
+.bar{height:12px;background:var(--track);border-radius:99px;overflow:hidden;margin:14px 0 8px}
+.bar i{display:block;height:100%;width:${S_PCT}%;background:linear-gradient(90deg,var(--acc),var(--acc2));border-radius:99px}
+.muted{color:var(--mute);font-size:13.5px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:9px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0;padding-top:0}
+.k{color:var(--mute)}
+.v{font-weight:600;text-align:right;overflow-wrap:anywhere}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:1px}
+.ok{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 22%,transparent)}
+.warn{background:var(--warn)}.err{background:var(--err)}.off{background:var(--off)}
+.lbl{font-size:12px;color:var(--mute);margin:12px 0 4px;font-weight:600}
+.lbl:first-of-type{margin-top:0}
+.path{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:7px 7px 7px 13px}
+.path code{flex:1;font:600 14px ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere}
+button{border:0;background:var(--acc);color:#fff;border-radius:8px;padding:7px 12px;font:700 12px system-ui,sans-serif;cursor:pointer}
+button:hover{filter:brightness(1.1)}
+.note{margin-top:14px;font-size:13px;color:var(--mute)}
+footer{text-align:center;color:var(--mute);font-size:12px;padding:6px 16px 30px;letter-spacing:.02em}
+footer b{letter-spacing:.2em;color:var(--ink)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><div class="logo">V</div><div><b>VERGEN</b><small>TECHNOLOGY</small></div></div>
+  <h1>$(h "$HOST_NAME")</h1>
+  <div class="sub">Cartella di rete NASPI · $(h "$S_MODEL")</div>
+  <div class="pill"><span class="dot ${overall_c}"></span>${overall}</div>
+</div></header>
+<main><div class="wrap grid">
+  <section class="card">
+    <h2>Spazio</h2>
+    <div class="big">${S_PCT}%<span>usato</span></div>
+    <div class="bar"><i></i></div>
+    <div class="muted">$(h "$S_USED") usati di $(h "$S_SIZE") · <b>$(h "$S_AVAIL") liberi</b></div>
+    <div class="note"><span class="dot ${dk%%|*}"></span>$(h "${dk#*|}")</div>
+  </section>
+  <section class="card">
+    <h2>Stato</h2>
+    <div class="row"><span class="k">Cartella condivisa</span><span class="v"><span class="dot ${sm%%|*}"></span>$(h "${sm#*|}")</span></div>
+    <div class="row"><span class="k">Accesso da fuori</span><span class="v"><span class="dot ${ts%%|*}"></span>$(h "${ts#*|}")</span></div>
+    <div class="row"><span class="k">Alimentazione</span><span class="v"><span class="dot ${pw%%|*}"></span>$(h "${pw#*|}")</span></div>
+    <div class="row"><span class="k">Temperatura</span><span class="v">${temp_txt}</span></div>
+    <div class="row"><span class="k">Acceso da</span><span class="v">$(h "${S_UP:-–}")</span></div>
+    <div class="row"><span class="k">Indirizzo</span><span class="v">$(h "${S_LANIP:-–}")</span></div>
+  </section>
+  <section class="card">
+    <h2>Collegati</h2>
+    <div class="lbl">Windows · Esplora file</div>
+    <div class="path"><code>$(h "$WIN_PATH")</code><button onclick="cp(this)">Copia</button></div>
+    <div class="lbl">Mac · Finder › Vai › Connetti al server</div>
+    <div class="path"><code>smb://$(h "$HOST_NAME").local/$(h "$SHARE_NAME")</code><button onclick="cp(this)">Copia</button></div>
+    <div class="lbl">Fuori casa · con Tailscale, stesso account</div>
+    <div class="path"><code>$(h "$WIN_PATH")</code><button onclick="cp(this)">Copia</button></div>
+    ${tsrow}
+    <div class="note">Utente <b>$(h "$NAS_USER")</b> · la password la trovi sul NAS con <code>sudo naspi</code></div>
+  </section>
+</div></main>
+<footer><b>VERGEN TECHNOLOGY</b> · NASPI v${NASPI_VERSION} · aggiornato ${d}</footer>
+<script>
+function cp(b){var t=b.previousElementSibling.textContent,a=document.createElement("textarea");a.value=t;a.style.position="fixed";a.style.opacity="0";document.body.appendChild(a);a.select();try{document.execCommand("copy");b.textContent="Copiato";setTimeout(function(){b.textContent="Copia"},1600)}catch(e){}document.body.removeChild(a)}
+</script>
+</body>
+</html>
+HTML
+  chmod 644 "$WWW/index.html.tmp"
+  mv -f "$WWW/index.html.tmp" "$WWW/index.html"
+}
+
+cmd_help() {
+  ui_header "comandi"
+  ui_kv "sudo naspi" "riepilogo: percorsi, utente, password, stato"
+  ui_kv "naspi login" "nuovo link Tailscale"
+  ui_kv "naspi diag" "diagnosi SSD / alimentazione / servizi"
+  ui_kv "naspi mount" "rimonta l'SSD"
+  ui_kv "naspi format" "cancella e formatta l'SSD (ext4)"
+  ui_kv "naspi web" "aggiorna il pannello http://${HOST_NAME}.local"
+  echo
+}
+
+case "${1:-}" in
+  "")              cmd_summary ;;
+  login)           cmd_login ;;
+  diag)            cmd_diag ;;
+  mount)           cmd_mount ;;
+  format)          need_root format; shift; exec /usr/local/sbin/naspi-format "$@" ;;
+  motd)            cmd_motd ;;
+  web)             cmd_web ;;
+  help|-h|--help)  cmd_help ;;
+  *)               cmd_help; exit 1 ;;
+esac
 CLI
   chmod 755 /usr/local/bin/naspi
   mkdir -p "$SHARE_PATH"
   cat > "${SHARE_PATH}/LEGGIMI.txt" <<EOF
-Cartella condivisa
+  VERGEN TECHNOLOGY  ·  NASPI
+  ===========================
 
-Windows:  \\\\${HOST_NAME}\\${SHARE_NAME}
-Mac:      smb://${HOST_NAME}.local/${SHARE_NAME}
-Utente:   ${NAS_USER}
-Password: ${SMB_PASS}
+  Cartella di rete: ${HOST_NAME}
 
-Fuori casa (Tailscale, stesso account):
-  \\\\${HOST_NAME}\\${SHARE_NAME}
+  Windows   \\\\${HOST_NAME}\\${SHARE_NAME}
+  Mac       smb://${HOST_NAME}.local/${SHARE_NAME}
+  Pannello  http://${HOST_NAME}.local
+  Utente    ${NAS_USER}
+
+  Fuori casa: installa Tailscale e accedi con lo stesso account,
+  poi apri \\\\${HOST_NAME}\\${SHARE_NAME}
 EOF
   chown "${NAS_USER}:${NAS_GROUP}" "${SHARE_PATH}/LEGGIMI.txt" 2>/dev/null || true
+}
+
+write_motd() {
+  # schermata di benvenuto al login SSH
+  if [ -f /etc/motd ] && [ ! -f /etc/motd.naspi.bak ]; then
+    cp -a /etc/motd /etc/motd.naspi.bak
+  fi
+  : > /etc/motd
+  mkdir -p /etc/update-motd.d
+  cat > /etc/update-motd.d/90-naspi <<'EOF'
+#!/bin/sh
+NASPI_FORCE_COLOR=1 timeout 8 /usr/local/bin/naspi motd 2>/dev/null || true
+EOF
+  chmod 755 /etc/update-motd.d/90-naspi
+}
+
+install_web() {
+  mkdir -p /var/lib/naspi/www
+  chmod 755 /var/lib/naspi /var/lib/naspi/www
+  pkg_installed busybox || pkg_first busybox || true
+  cat > /usr/local/sbin/naspi-httpd <<'EOF'
+#!/bin/sh
+# Pannello NASPI: server minimo (busybox httpd, ~1 MB RAM sul Pi 1)
+DIR=/var/lib/naspi/www
+if busybox --list 2>/dev/null | grep -qx httpd; then
+  exec busybox httpd -f -p 80 -h "$DIR"
+fi
+exec python3 -m http.server 80 --bind 0.0.0.0 --directory "$DIR"
+EOF
+  chmod 755 /usr/local/sbin/naspi-httpd
+  cat > /etc/systemd/system/naspi-web.service <<'EOF'
+[Unit]
+Description=NASPI · VERGEN TECHNOLOGY: pannello web
+After=network.target
+[Service]
+ExecStart=/usr/local/sbin/naspi-httpd
+DynamicUser=yes
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+Restart=always
+RestartSec=5
+MemoryMax=32M
+[Install]
+WantedBy=multi-user.target
+EOF
+  cat > /etc/systemd/system/naspi-web-update.service <<'EOF'
+[Unit]
+Description=NASPI: aggiorna pannello web
+[Service]
+Type=oneshot
+Nice=10
+ExecStart=/usr/local/bin/naspi web
+EOF
+  cat > /etc/systemd/system/naspi-web-update.timer <<'EOF'
+[Unit]
+Description=NASPI: aggiorna pannello web ogni minuto
+[Timer]
+OnBootSec=20
+OnUnitActiveSec=60
+AccuracySec=10
+[Install]
+WantedBy=timers.target
+EOF
+  systemctl daemon-reload || true
+  /usr/local/bin/naspi web >/dev/null 2>&1 || warn "pannello web: prima generazione fallita"
+  systemctl enable --now naspi-web.service naspi-web-update.timer >/dev/null 2>&1 \
+    || warn "pannello web non avviato (porta 80 occupata?)"
+  if systemctl is-active --quiet naspi-web; then
+    ok "Pannello web: http://${HOST_NAME}.local"
+  fi
 }
 
 install_format_tool() {
@@ -1274,28 +1610,51 @@ print_report() {
 
 main() {
   need_root
+  local t0=$SECONDS
+  ui_banner "Installazione NAS"
+  printf '    %sNiente domande: puoi lasciarlo lavorare. Sul Pi 1 servono 10-30 minuti.%s
+' "$CM" "$C0"
+
+  ui_step 1 6 "Sistema"
   detect_user
   set_hostname
-  log "Utente Samba: ${NAS_USER}  (i passi già fatti vengono saltati)"
+  log "Utente della cartella: ${NAS_USER}"
   ensure_swap
   lower_gpu_mem
+
+  ui_step 2 6 "Stabilita USB e SSD"
   usb_ssd_stable
   tune_system
+  ok "USB senza risparmio energetico, memoria per il driver USB, log persistenti"
+
+  ui_step 3 6 "Pacchetti"
   apt_ok
+
+  ui_step 4 6 "Disco e cartella condivisa"
   smb_password
   setup_share_dir
   save_creds
   write_smb_conf
   write_avahi
   start_samba
+
+  ui_step 5 6 "Comandi e pannello VERGEN"
+  write_ui_lib
   write_cli
   install_format_tool
+  write_motd
+  install_web
+  ok "Comando: sudo naspi   ·   pannello: http://${HOST_NAME}.local"
+
+  ui_step 6 6 "Accesso da fuori casa (Tailscale)"
   install_tailscale
   systemctl enable tailscaled >/dev/null 2>&1 || true
   bring_up_tailscale
   wait_tailscale_login
+
   print_report
-  log "Fatto. Riepilogo: sudo naspi    Link nuovo: sudo naspi login"
+  ok "Installazione completata in $(( (SECONDS - t0) / 60 )) min $(( (SECONDS - t0) % 60 )) s"
+  echo
 }
 
 main "$@"

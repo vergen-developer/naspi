@@ -1,14 +1,15 @@
 {
   "0": "install.sh",
-  "1": "log",
+  "1": "pkg_first",
   "2": "main",
   "3": "install_tailscale",
-  "4": "skip",
+  "4": "start_samba",
   "5": "ts_field",
   "6": "backup-desktop.ps1",
   "7": "format-usb.sh",
   "8": "http_pipe",
   "9": "format-ssd-admin.ps1",
-  "10": "NASPI",
-  "11": "usb_ssd_stable"
+  "10": "NASPI · VERGEN TECHNOLOGY",
+  "11": "usb_ssd_stable",
+  "12": "setup_share_dir"
 }
