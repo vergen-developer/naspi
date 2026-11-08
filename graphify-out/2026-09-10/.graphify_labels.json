@@ -4,5 +4,9 @@
   "2": "main",
   "3": "install_tailscale",
   "4": "skip",
-  "7": "format-usb.sh"
+  "5": "ts_field",
+  "6": "backup-desktop.ps1",
+  "7": "format-usb.sh",
+  "8": "http_pipe",
+  "9": "format-ssd-admin.ps1"
 }

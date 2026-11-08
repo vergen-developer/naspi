@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# Script Linux: sempre LF (con CRLF bash sul Pi si rompe)
+*.sh text eol=lf
+# Script Windows: CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf

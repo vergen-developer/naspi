@@ -1,14 +1,26 @@
 {
   "install.sh": {
-    "mtime": 1789038678.2059174,
-    "seen": 1789038679.5194893,
-    "ast_hash": "eaf29a75e006cc184360fddc6510b7ee",
+    "mtime": 1789045414.154974,
+    "seen": 1789045789.0217335,
+    "ast_hash": "b78538d6b481901f62b433548b6456a6",
     "semantic_hash": ""
   },
   "format-usb.sh": {
-    "mtime": 1788962502.144452,
-    "seen": 1789038679.5194893,
-    "ast_hash": "08d5c66dc9445a1c886199525e47e27f",
+    "mtime": 1789045516.6109934,
+    "seen": 1789045789.0217335,
+    "ast_hash": "3e935e073f0e1827f287b41af08db215",
+    "semantic_hash": ""
+  },
+  "windows/backup-desktop.ps1": {
+    "mtime": 1789039916.977996,
+    "seen": 1789045789.0217335,
+    "ast_hash": "0bd07207ef40e5936e984cd168648c6f",
+    "semantic_hash": ""
+  },
+  "windows/format-ssd-admin.ps1": {
+    "mtime": 1789045745.3140483,
+    "seen": 1789045789.0217335,
+    "ast_hash": "3be43ca64ba23d5b32ccbf3e6111dd1b",
     "semantic_hash": ""
   }
 }

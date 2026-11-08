@@ -1,14 +1,28 @@
 #!/bin/bash
 # NASPI — NAS minimale per Raspberry Pi 1 (e successivi)
 #
-# Sul Pi:
-#   sudo bash install.sh          # idempotente: salta ciò che è già fatto
-#   sudo naspi login              # nuovo link Tailscale (il vecchio scade)
+# Installazione (Raspberry Pi OS Lite, un solo comando, nessuna domanda):
+#   curl -fsSL https://raw.githubusercontent.com/vergen-developer/naspi/main/install.sh | sudo bash
+# oppure dal repo clonato:
+#   sudo bash install.sh          # idempotente: rilancialo quando vuoi
+#
+# Opzioni (variabili d'ambiente, es. sudo NASPI_GUEST=1 bash install.sh):
+#   NASPI_HOSTNAME=nome     nome di rete (default mariarosaria)
+#   NASPI_PASSWORD=xxx      password Samba (default generata)
+#   NASPI_GUEST=1           accesso senza password (sconsigliato)
+#   NASPI_AUTOFORMAT=0      non formattare mai in automatico i dischi vuoti
+#   TAILSCALE_AUTHKEY=tskey-...  login Tailscale automatico senza link
+#
+# Dopo:  sudo naspi | naspi login | naspi diag | naspi mount | naspi format
 #
 if [ -z "${BASH_VERSION:-}" ]; then
   exec /bin/bash "$0" "$@"
 fi
 _src="${BASH_SOURCE[0]:-$0}"
+if [ -f "$_src" ] && [ -z "${_NASPI_SRC_DIR:-}" ]; then
+  _NASPI_SRC_DIR="$(cd "$(dirname "$_src")" && pwd)"
+  export _NASPI_SRC_DIR
+fi
 if [ -f "$_src" ] && grep -q $'\r' "$_src" 2>/dev/null; then
   _tmp="$(mktemp)"
   tr -d '\r' < "$_src" > "$_tmp"
@@ -26,6 +40,8 @@ CRED_FILE="${NASPI_DIR}/credentials"
 TS_CACHE="/var/cache/naspi"
 TS_ARMv6_PIN="1.62.0"
 WAIT_LOGIN_SECS="${NASPI_WAIT_LOGIN:-15}"
+REPO_RAW="${NASPI_REPO_RAW:-https://raw.githubusercontent.com/vergen-developer/naspi/main}"
+BOOT_CHANGED=0
 
 log()  { printf '\n\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!!\033[0m %s\n' "$*"; }
@@ -133,6 +149,101 @@ lower_gpu_mem() {
   grep -q '^gpu_mem=' "$cfg" || echo 'gpu_mem=16' >> "$cfg"
 }
 
+boot_file() {
+  local f
+  for f in "/boot/firmware/$1" "/boot/$1"; do
+    [ -f "$f" ] && { echo "$f"; return 0; }
+  done
+  return 1
+}
+
+# Imposta key=value in config.txt (una sola riga, fuori da sezioni [pi4] ecc.)
+config_set() {
+  local cfg="$1" key="$2" val="$3"
+  if grep -qE "^[[:space:]]*#?[[:space:]]*${key}=" "$cfg"; then
+    grep -qE "^${key}=${val}\$" "$cfg" && return 0
+    sed -i -E "0,/^[[:space:]]*#?[[:space:]]*${key}=.*/s//${key}=${val}/" "$cfg"
+  else
+    # in testa, prima di qualsiasi filtro [xxx]
+    sed -i "1i ${key}=${val}" "$cfg"
+  fi
+  BOOT_CHANGED=1
+}
+
+# Aggiunge/sostituisce un parametro kernel in cmdline.txt (riga unica)
+cmdline_set() {
+  local cmd="$1" key="$2" val="$3" line
+  line="$(head -n1 "$cmd" | tr -d '\r')"
+  case " $line " in
+    *" ${key}=${val} "*) return 0 ;;
+  esac
+  line="$(printf '%s\n' "$line" | sed -E "s/(^| )${key//./\\.}=[^ ]*//g; s/  +/ /g; s/^ //; s/ \$//")"
+  printf '%s %s=%s\n' "$line" "$key" "$val" > "$cmd"
+  BOOT_CHANGED=1
+}
+
+pi_model() {
+  tr -d '\0' < /proc/device-tree/model 2>/dev/null || echo "sconosciuto"
+}
+
+# Pi 1: le porte USB reggono poca corrente. Un SSD che assorbe troppo all'avvio
+# fa crollare i 5V → il Pi si riavvia o il disco si stacca/riconnette.
+# Qui riduciamo tutto ciò che è riducibile via software; il resto è hardware
+# (alimentatore 5V ≥2.5A + hub USB alimentato o cavo Y).
+usb_ssd_stable() {
+  local cfg cmd d
+  BOOT_CHANGED=0
+  log "Stabilità USB/SSD per $(pi_model)"
+  if cfg="$(boot_file config.txt)"; then
+    [ -f "${cfg}.naspi.bak" ] || cp -a "$cfg" "${cfg}.naspi.bak"
+    config_set "$cfg" max_usb_current 1          # B+/A+: 600mA → 1.2A sulle USB
+    # overclock = più consumo = più brown-out con l'SSD: torna ai default
+    sed -i -E 's/^(force_turbo|over_voltage|arm_freq|core_freq|sdram_freq)=/#naspi# \1=/' "$cfg"
+  fi
+  if cmd="$(boot_file cmdline.txt)"; then
+    [ -f "${cmd}.naspi.bak" ] || cp -a "$cmd" "${cmd}.naspi.bak"
+    # usbcore e usb-storage sono built-in nel kernel Raspberry: modprobe.d non basta
+    cmdline_set "$cmd" usbcore.autosuspend -1
+    cmdline_set "$cmd" usb-storage.quirks 13fd:0840:emnu
+  fi
+  mkdir -p /etc/modprobe.d
+  cat > /etc/modprobe.d/naspi-usb.conf <<'EOF'
+options usbcore autosuspend=-1
+options usb-storage quirks=13fd:0840:emnu
+EOF
+  # subito, senza riavvio
+  echo -1 >/sys/module/usbcore/parameters/autosuspend 2>/dev/null || true
+  for d in /sys/bus/usb/devices/*/power/control; do
+    echo on >"$d" 2>/dev/null || true
+  done
+  rm -f /etc/udev/rules.d/98-naspi-usb-power.rules
+  cat > /etc/udev/rules.d/90-naspi-usb-power.rules <<'EOF'
+# NASPI: nessun autosuspend sui dispositivi USB (dischi che si staccano)
+ACTION=="add", SUBSYSTEM=="usb", TEST=="power/control", ATTR{power/control}="on"
+EOF
+  udevadm control --reload-rules >/dev/null 2>&1 || true
+}
+
+# Pi 1 (256/512 MB): il driver USB dwc_otg fallisce le allocazioni se la RAM
+# libera scende troppo → disco/rete USB che cadono sotto carico.
+tune_system() {
+  cat > /etc/sysctl.d/90-naspi.conf <<'EOF'
+vm.min_free_kbytes = 8192
+vm.dirty_background_ratio = 5
+vm.dirty_ratio = 10
+vm.swappiness = 10
+EOF
+  sysctl -q -p /etc/sysctl.d/90-naspi.conf >/dev/null 2>&1 || true
+  # log persistenti (piccoli): dopo un riavvio improvviso `journalctl -b -1` dice perché
+  mkdir -p /etc/systemd/journald.conf.d /var/log/journal
+  cat > /etc/systemd/journald.conf.d/naspi.conf <<'EOF'
+[Journal]
+Storage=persistent
+SystemMaxUse=32M
+EOF
+  systemctl restart systemd-journald >/dev/null 2>&1 || true
+}
+
 APT_OPTS=(-y --no-install-recommends -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold -o Acquire::Retries=3)
 
 preseed_debconf() {
@@ -218,7 +329,12 @@ apt_prepare() {
 
 apt_ok() {
   if command -v smbd >/dev/null 2>&1 \
-    && { command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; }; then
+    && { command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1; } \
+    && command -v mkfs.ext4 >/dev/null 2>&1 \
+    && command -v sfdisk >/dev/null 2>&1 \
+    && command -v ntfs-3g >/dev/null 2>&1 \
+    && { command -v mkfs.exfat >/dev/null 2>&1 || command -v fsck.exfat >/dev/null 2>&1; } \
+    && command -v lsusb >/dev/null 2>&1; then
     skip "pacchetti apt (già installati)"
     return 0
   fi
@@ -248,248 +364,283 @@ apt_ok() {
   pkg_first exfatprogs exfat-fuse exfat-utils fuse-exfat || warn "exfat opzionale assente (ok)"
   pkg_first iproute2 iproute || true
   pkg_first kmod || true
+  pkg_first e2fsprogs || die "e2fsprogs (mkfs.ext4) mancante"
+  pkg_first fdisk util-linux || true
+  pkg_first dosfstools || true
+  pkg_first usbutils || true
+  pkg_first raspi-utils libraspberrypi-bin || true
   log "Pacchetti pronti, continuo"
-}
-
-install_fs_helper() {
-  case "${1:-}" in
-    ntfs|ntfs-3g)
-      pkg_first ntfs-3g ntfsprogs || true
-      ;;
-    exfat)
-      pkg_first exfatprogs exfat-fuse exfat-utils fuse-exfat || true
-      ;;
-    vfat|fat|fat32)
-      pkg_first dosfstools || true
-      ;;
-  esac
-}
-
-root_disk() {
-  local src pk
-  src="$(findmnt -n -o SOURCE / || true)"
-  pk="$(lsblk -no PKNAME "$src" 2>/dev/null || true)"
-  if [ -n "$pk" ]; then
-    echo "$pk"
-    return
-  fi
-  echo "$src" | sed 's|^/dev/||; s/p\?[0-9]\+$//'
-}
-
-usb_share_source() {
-  local boot name type tran pk fstype parent_tran
-  boot="$(root_disk)"
-  while read -r name type tran pk fstype; do
-    [ "$type" = "part" ] || [ "$type" = "disk" ] || continue
-    [ -n "$fstype" ] || continue
-    parent_tran="$tran"
-    if [ -z "$parent_tran" ] && [ -n "$pk" ]; then
-      parent_tran="$(lsblk -no TRAN "/dev/$pk" 2>/dev/null | head -1 || true)"
-    fi
-    [ "$parent_tran" = "usb" ] || continue
-    case "$name" in
-      *"${boot}"*) continue ;;
-    esac
-    echo "$name $fstype"
-    return 0
-  done < <(lsblk -rpn -o NAME,TYPE,TRAN,PKNAME,FSTYPE 2>/dev/null \
-    || lsblk -rpn -o NAME,TYPE,PKNAME,FSTYPE 2>/dev/null \
-    || true)
-  return 1
-}
-
-fstab_opts() {
-  local fstype="$1" uid gid
-  uid="$(id -u "$NAS_USER")"
-  gid="$(id -g "$NAS_USER")"
-  case "$fstype" in
-    vfat|fat|fat32|exfat|ntfs|ntfs-3g)
-      echo "defaults,nofail,noatime,uid=${uid},gid=${gid},umask=0002,x-systemd.device-timeout=15"
-      ;;
-    *)
-      echo "defaults,nofail,noatime,x-systemd.device-timeout=15"
-      ;;
-  esac
 }
 
 install_usb_automount() {
   cat > /usr/local/sbin/naspi-usb-mount <<'USB'
 #!/bin/bash
-set -euo pipefail
+# NASPI: monta l'SSD/HDD USB su /srv/nas. Chiamato da udev (collega/scollega),
+# al boot e da `sudo naspi mount`. Disco vuoto (senza partizioni né dati)
+# → formattato ext4 in automatico. Un disco con dati non viene MAI cancellato.
+set -uo pipefail
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 CRED=/etc/naspi/credentials
 SHARE_PATH=/srv/nas
 NAS_USER=pi
-if [ -f "$CRED" ]; then
-  # shellcheck disable=SC1090
-  . "$CRED"
-fi
+NASPI_AUTOFORMAT=1
+LABEL=nas
+[ -f "$CRED" ] && . "$CRED"
 NAS_GROUP="$(id -gn "$NAS_USER" 2>/dev/null || echo "$NAS_USER")"
+WAIT="${1:-5}"   # secondi di attesa del disco (al boot di più)
+
+say() { logger -t naspi-usb -- "$*" 2>/dev/null || true; echo "naspi-usb: $*"; }
+
+exec 9>/run/naspi-usb.lock
+flock -w 900 9 || exit 0
 mkdir -p "$SHARE_PATH"
+
+# Rimuove eventuali vecchie righe fstab di NASPI (causavano attese al boot)
+if grep -qE "^[^#].*[[:space:]]${SHARE_PATH}[[:space:]]" /etc/fstab 2>/dev/null; then
+  sed -i "\|^[^#].*[[:space:]]${SHARE_PATH}[[:space:]]|d" /etc/fstab
+  systemctl daemon-reload 2>/dev/null || true
+fi
 
 root_disk() {
   local src pk
-  src="$(findmnt -n -o SOURCE / || true)"
-  pk="$(lsblk -no PKNAME "$src" 2>/dev/null || true)"
-  if [ -n "$pk" ]; then
-    echo "$pk"
-    return
-  fi
-  echo "$src" | sed 's|^/dev/||; s/p\?[0-9]\+$//'
+  src="$(findmnt -n -o SOURCE / 2>/dev/null || true)"
+  [ "$src" = "/dev/root" ] && src="$(readlink -f /dev/root 2>/dev/null || echo /dev/mmcblk0p2)"
+  pk="$(lsblk -no PKNAME "$src" 2>/dev/null | head -1 || true)"
+  [ -n "$pk" ] && { basename "$pk"; return; }
+  basename "$src" | sed -E 's/p?[0-9]+$//'
 }
 
-usb_share_source() {
-  local boot name type tran pk fstype parent_tran
+# Dischi USB = dischi il cui percorso sysfs passa per il bus USB (affidabile anche
+# dove lsblk non riporta TRAN). Mai la microSD/disco di sistema.
+usb_disks() {
+  local b boot real
   boot="$(root_disk)"
-  while read -r name type tran pk fstype; do
-    [ "$type" = "part" ] || [ "$type" = "disk" ] || continue
-    [ -n "$fstype" ] || continue
-    parent_tran="$tran"
-    if [ -z "$parent_tran" ] && [ -n "$pk" ]; then
-      parent_tran="$(lsblk -no TRAN "/dev/$pk" 2>/dev/null | head -1 || true)"
-    fi
-    [ "$parent_tran" = "usb" ] || continue
-    case "$name" in
-      *"${boot}"*) continue ;;
-    esac
-    echo "$name $fstype"
-    return 0
-  done < <(lsblk -rpn -o NAME,TYPE,TRAN,PKNAME,FSTYPE 2>/dev/null \
-    || lsblk -rpn -o NAME,TYPE,PKNAME,FSTYPE 2>/dev/null \
-    || true)
-  return 1
+  for b in /sys/block/*; do
+    [ -e "$b/device" ] || continue
+    real="$(readlink -f "$b")"
+    case "$real" in */usb[0-9]*) ;; *) continue ;; esac
+    [ "$(basename "$b")" = "$boot" ] && continue
+    [ "$(cat "$b/size" 2>/dev/null || echo 0)" -gt 0 ] || continue
+    echo "/dev/$(basename "$b")"
+  done
 }
 
+fs_type() { blkid -p -o value -s TYPE "$1" 2>/dev/null | head -1; }
+size_of() { lsblk -bdno SIZE "$1" 2>/dev/null || echo 0; }
+
+# Miglior volume montabile: la partizione più grande con FS noto
+# (salta la piccola EFI FAT dei dischi formattati da Windows/Mac).
+best_volume() {
+  local disk="$1" dev t s best="" best_s=0
+  for dev in $(lsblk -lnpo NAME "$disk" 2>/dev/null); do
+    t="$(fs_type "$dev")"
+    case "$t" in ext4|ext3|ext2|btrfs|xfs|exfat|ntfs|vfat) ;; *) continue ;; esac
+    s="$(size_of "$dev")"
+    [ "${s:-0}" -gt "$best_s" ] || continue
+    best_s="$s"; best="$dev $t"
+  done
+  [ -n "$best" ] && echo "$best"
+}
+
+# Vuoto = nessuna firma di partizioni/FS sul disco né sulle sue partizioni,
+# e il disco si legge davvero (un disco che non risponde NON è "vuoto").
+disk_is_blank() {
+  local disk="$1" dev
+  dd if="$disk" of=/dev/null bs=1M count=4 iflag=direct status=none 2>/dev/null || return 1
+  for dev in $(lsblk -lnpo NAME "$disk" 2>/dev/null); do
+    [ "$dev" = "$disk" ] && continue
+    [ -n "$(blkid -p -o value -s TYPE "$dev" 2>/dev/null)" ] && return 1
+  done
+  [ -z "$(blkid -p -o value -s TYPE "$disk" 2>/dev/null)" ] || return 1
+  [ -z "$(blkid -p -o value -s PTTYPE "$disk" 2>/dev/null)" ] && return 0
+  # tabella partizioni presente ma partizioni tutte senza FS → vuoto
+  return 0
+}
+
+format_blank() {
+  local disk="$1" part
+  say "Disco ${disk} vuoto: creo partizione ext4 '${LABEL}' (nessun dato presente)"
+  wipefs -a "$disk" >/dev/null 2>&1 || true
+  printf 'label: gpt\n,,L\n' | sfdisk -q -w always "$disk" >/dev/null 2>&1 || return 1
+  partprobe "$disk" >/dev/null 2>&1 || blockdev --rereadpt "$disk" >/dev/null 2>&1 || true
+  udevadm settle -t 20 >/dev/null 2>&1 || true
+  sleep 2
+  part="$(lsblk -lnpo NAME,TYPE "$disk" | awk '$2=="part"{print $1; exit}')"
+  [ -b "${part:-}" ] || return 1
+  mkfs.ext4 -q -F -L "$LABEL" -m 0 -E lazy_itable_init=1,lazy_journal_init=1 "$part" >/dev/null 2>&1 || return 1
+  udevadm settle -t 20 >/dev/null 2>&1 || true
+  say "Formattato ${part} (ext4)"
+}
+
+try_mount() {
+  local dev="$1" t="$2" uid gid own
+  uid="$(id -u "$NAS_USER")"; gid="$(id -g "$NAS_USER")"
+  own="uid=${uid},gid=${gid},umask=0002"
+  case "$t" in
+    ext4|ext3|ext2)
+      fsck."$t" -p "$dev" >/dev/null 2>&1   # ripara dopo spegnimenti bruschi
+      mount -t "$t" -o noatime,commit=60 "$dev" "$SHARE_PATH" ;;
+    btrfs|xfs)
+      mount -t "$t" -o noatime "$dev" "$SHARE_PATH" ;;
+    exfat)
+      fsck.exfat -p "$dev" >/dev/null 2>&1 || true
+      mount -t exfat -o "noatime,${own}" "$dev" "$SHARE_PATH" ;;
+    vfat)
+      fsck.vfat -a "$dev" >/dev/null 2>&1 || true
+      mount -t vfat -o "noatime,utf8,${own}" "$dev" "$SHARE_PATH" ;;
+    ntfs)
+      # ntfs3 (kernel) è molto più veloce di ntfs-3g (FUSE) sul Pi 1
+      mount -t ntfs3 -o "noatime,${own}" "$dev" "$SHARE_PATH" 2>/dev/null \
+        || mount -t ntfs-3g -o "noatime,big_writes,${own}" "$dev" "$SHARE_PATH" ;;
+    *) return 1 ;;
+  esac
+}
+
+# 1) già montato da un disco ancora presente → niente da fare
 cur="$(findmnt -n -o SOURCE "$SHARE_PATH" 2>/dev/null || true)"
 if [ -n "$cur" ]; then
-  pk="$(lsblk -no PKNAME "$cur" 2>/dev/null || true)"
-  tran="$(lsblk -no TRAN "$cur" 2>/dev/null | head -1 || true)"
-  [ -z "$tran" ] && [ -n "$pk" ] && tran="$(lsblk -no TRAN "/dev/$pk" 2>/dev/null | head -1 || true)"
-  if [ "$tran" = "usb" ]; then
+  if [ -b "$cur" ] && dd if="$cur" of=/dev/null bs=4k count=1 iflag=direct status=none 2>/dev/null; then
     exit 0
   fi
+  say "Disco su ${SHARE_PATH} scollegato/non risponde: smonto"
+  umount "$SHARE_PATH" 2>/dev/null || umount -l "$SHARE_PATH" 2>/dev/null || true
+  systemctl reload smbd 2>/dev/null || true
 fi
 
-line="$(usb_share_source || true)"
+# 2) attendi il disco (gli SSD in box USB ci mettono qualche secondo)
+disks=""
+i=0
+while [ "$i" -le "$WAIT" ]; do
+  udevadm settle -t 5 >/dev/null 2>&1 || true
+  disks="$(usb_disks)"
+  [ -n "$disks" ] && break
+  # nessun dispositivo di archiviazione USB nemmeno in enumerazione → inutile attendere
+  if [ "$i" -ge 8 ] && ! ls /sys/bus/usb/drivers/usb-storage/ /sys/bus/usb/drivers/uas/ 2>/dev/null | grep -q ':'; then
+    break
+  fi
+  sleep 1; i=$((i + 1))
+done
+if [ -z "$disks" ]; then
+  say "Nessun disco USB: ${SHARE_PATH} resta sulla microSD"
+  exit 0
+fi
+
+# 3) scegli il volume; disco vuoto → formatta
+line=""
+for d in $disks; do
+  line="$(best_volume "$d" || true)"
+  [ -n "$line" ] && break
+done
 if [ -z "$line" ]; then
-  logger -t naspi-usb "Nessun SSD USB formattato. Formattalo exFAT o NTFS sul PC e ricollega."
+  for d in $disks; do
+    if [ "${NASPI_AUTOFORMAT:-1}" = "1" ] && disk_is_blank "$d"; then
+      format_blank "$d" || { say "Formattazione di ${d} fallita (alimentazione? usa hub alimentato)"; continue; }
+      line="$(best_volume "$d" || true)"
+      [ -n "$line" ] && break
+    fi
+  done
+fi
+if [ -z "$line" ]; then
+  say "Disco USB presente ma senza file system leggibile e non vuoto: non tocco nulla. Per cancellarlo: sudo naspi format"
   exit 0
 fi
 
 src="${line%% *}"
 fstype="${line##* }"
-uuid="$(blkid -s UUID -o value "$src" || true)"
-[ -n "$uuid" ] || exit 0
+findmnt -n "$src" >/dev/null 2>&1 && { umount "$src" 2>/dev/null || umount -l "$src" 2>/dev/null || true; }
 
-uid="$(id -u "$NAS_USER")"
-gid="$(id -g "$NAS_USER")"
-fstab_type="$fstype"
-opts="defaults,nofail,noatime,x-systemd.device-timeout=15"
+ok=0
+for i in 1 2 3; do
+  if try_mount "$src" "$fstype"; then ok=1; break; fi
+  sleep 3
+done
+if [ "$ok" -ne 1 ]; then
+  say "Montaggio di ${src} (${fstype}) fallito. Vedi: dmesg | tail -30"
+  exit 1
+fi
+
 case "$fstype" in
-  vfat|fat|fat32|exfat|ntfs|ntfs-3g)
-    [ "$fstype" = "ntfs" ] && fstab_type="ntfs-3g"
-    opts="defaults,nofail,noatime,uid=${uid},gid=${gid},umask=0002,x-systemd.device-timeout=15"
-    ;;
+  ext*|btrfs|xfs)
+    chown "${NAS_USER}:${NAS_GROUP}" "$SHARE_PATH" 2>/dev/null || true
+    chmod 2775 "$SHARE_PATH" 2>/dev/null || true ;;
 esac
-
-if findmnt "$src" >/dev/null 2>&1; then
-  umount "$src" 2>/dev/null || umount -l "$src" 2>/dev/null || true
-fi
-if findmnt "$SHARE_PATH" >/dev/null 2>&1; then
-  umount "$SHARE_PATH" 2>/dev/null || true
-fi
-if grep -q " ${SHARE_PATH} " /etc/fstab; then
-  sed -i "\| ${SHARE_PATH} |d" /etc/fstab
-fi
-echo "UUID=${uuid} ${SHARE_PATH} ${fstab_type} ${opts} 0 0" >> /etc/fstab
-mount "$SHARE_PATH" || exit 0
-chown "${NAS_USER}:${NAS_GROUP}" "$SHARE_PATH" 2>/dev/null || true
-chmod 775 "$SHARE_PATH" 2>/dev/null || true
-systemctl reload smbd 2>/dev/null || systemctl restart smbd 2>/dev/null || true
-logger -t naspi-usb "SSD USB montato su ${SHARE_PATH} (${src} ${fstype})"
+systemctl reload smbd 2>/dev/null || true
+say "SSD USB montato su ${SHARE_PATH} (${src} ${fstype})"
+exit 0
 USB
   chmod 755 /usr/local/sbin/naspi-usb-mount
 
-  cat > /etc/systemd/system/naspi-usb.service <<'EOF'
+  # vecchia unit (con sleep fisso) → sostituita
+  systemctl disable naspi-usb.service >/dev/null 2>&1 || true
+  rm -f /etc/systemd/system/naspi-usb.service /etc/udev/rules.d/99-naspi-usb.rules
+
+  cat > /etc/systemd/system/naspi-usb-boot.service <<'EOF'
 [Unit]
-Description=NASPI mount SSD USB su /srv/nas
-After=local-fs.target
+Description=NASPI: monta SSD USB su /srv/nas al boot
+After=local-fs.target systemd-udev-settle.service
+Before=smbd.service samba.service
 [Service]
 Type=oneshot
-ExecStartPre=/bin/sleep 2
-ExecStart=/usr/local/sbin/naspi-usb-mount
-RemainAfterExit=no
+ExecStart=/usr/local/sbin/naspi-usb-mount 45
+TimeoutStartSec=15min
 [Install]
 WantedBy=multi-user.target
 EOF
 
-  cat > /etc/udev/rules.d/99-naspi-usb.rules <<'EOF'
-ACTION=="add", SUBSYSTEM=="block", ENV{ID_BUS}=="usb", RUN+="/bin/systemctl --no-block start naspi-usb.service"
+  cat > /etc/systemd/system/naspi-usb@.service <<'EOF'
+[Unit]
+Description=NASPI: evento USB %i
+After=local-fs.target
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/naspi-usb-mount 10
+TimeoutStartSec=15min
+EOF
+
+  cat > /etc/udev/rules.d/91-naspi-usb-mount.rules <<'EOF'
+# NASPI: disco USB collegato/scollegato → (s)monta /srv/nas
+ACTION=="add|remove", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", KERNEL=="sd*", RUN+="/bin/systemctl --no-block start naspi-usb@%k.service"
 EOF
 
   systemctl daemon-reload || true
-  systemctl enable naspi-usb.service >/dev/null 2>&1 || true
+  systemctl enable naspi-usb-boot.service >/dev/null 2>&1 || true
   udevadm control --reload-rules >/dev/null 2>&1 || true
 }
 
 setup_share_dir() {
   mkdir -p "$SHARE_PATH"
-  if [ -x /usr/local/sbin/naspi-usb-mount ] \
-    && [ -f /etc/systemd/system/naspi-usb.service ]; then
-    skip "cartella ${SHARE_PATH} + automount USB"
-    chown "${NAS_USER}:${NAS_GROUP}" "$SHARE_PATH" 2>/dev/null || true
-    chmod 775 "$SHARE_PATH" 2>/dev/null || true
-    return 0
-  fi
-  local line uuid fstype src opts fstab_type
-  if line="$(usb_share_source)"; then
-    src="${line%% *}"
-    fstype="${line##* }"
-    log "Trovato disco USB ${src} (${fstype}) → ${SHARE_PATH}"
-    install_fs_helper "$fstype"
-    uuid="$(blkid -s UUID -o value "$src" || true)"
-    if [ -n "$uuid" ]; then
-      if findmnt "$src" >/dev/null 2>&1; then
-        umount "$src" 2>/dev/null || umount -l "$src" 2>/dev/null || true
-      fi
-      if findmnt "$SHARE_PATH" >/dev/null 2>&1; then
-        umount "$SHARE_PATH" 2>/dev/null || true
-      fi
-      fstab_type="$fstype"
-      [ "$fstype" = "ntfs" ] && fstab_type="ntfs-3g"
-      opts="$(fstab_opts "$fstype")"
-      if grep -q " ${SHARE_PATH} " /etc/fstab; then
-        sed -i "\| ${SHARE_PATH} |d" /etc/fstab
-      fi
-      echo "UUID=${uuid} ${SHARE_PATH} ${fstab_type} ${opts} 0 0" >> /etc/fstab
-      if ! mount "$SHARE_PATH"; then
-        warn "USB non montato, uso la microSD"
-      fi
-    fi
-  else
-    log "Nessun USB ora: userò la microSD. Quando colleghi l'SSD parte da solo."
-  fi
   install_usb_automount
-  chown "${NAS_USER}:${NAS_GROUP}" "$SHARE_PATH" 2>/dev/null || true
-  chmod 775 "$SHARE_PATH" 2>/dev/null || true
+  log "Cerco SSD/HDD USB (fino a 30s)"
+  /usr/local/sbin/naspi-usb-mount 30 </dev/null || warn "SSD non montato: vedi 'sudo naspi diag'"
+  if findmnt -n "$SHARE_PATH" >/dev/null 2>&1; then
+    log "SSD su ${SHARE_PATH}: $(findmnt -n -o SOURCE,FSTYPE "$SHARE_PATH")"
+  else
+    warn "Nessun SSD ora: uso la microSD. Quando colleghi l'SSD si monta da solo."
+  fi
+  if ! findmnt -n "$SHARE_PATH" >/dev/null 2>&1; then
+    chown "${NAS_USER}:${NAS_GROUP}" "$SHARE_PATH" 2>/dev/null || true
+    chmod 2775 "$SHARE_PATH" 2>/dev/null || true
+  fi
 }
 
 smb_password() {
   mkdir -p "$NASPI_DIR"
   chmod 700 "$NASPI_DIR"
   if [ -f "$CRED_FILE" ]; then
-    _keep_host="$HOST_NAME"
+    local _keep_host="$HOST_NAME" _g="${NASPI_GUEST:-}" _a="${NASPI_AUTOFORMAT:-}"
     # shellcheck disable=SC1090
     . "$CRED_FILE"
     HOST_NAME="$_keep_host"
-    unset _keep_host
+    [ -n "$_g" ] && NASPI_GUEST="$_g"
+    [ -n "$_a" ] && NASPI_AUTOFORMAT="$_a"
   fi
+  case "${NASPI_PASSWORD:-}" in *"'"*|*' '*) die "NASPI_PASSWORD: niente apici o spazi" ;; esac
+  [ -n "${NASPI_PASSWORD:-}" ] && SMB_PASS="$NASPI_PASSWORD"
   if [ -z "${SMB_PASS:-}" ]; then
-    local i chars="ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
-    SMB_PASS=""
-    for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
-      SMB_PASS="${SMB_PASS}${chars:$((RANDOM % ${#chars})):1}"
-    done
+    # 12 caratteri da /dev/urandom (niente caratteri ambigui)
+    SMB_PASS="$(LC_ALL=C tr -dc 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789' </dev/urandom | head -c 12 || true)"
   fi
+  [ ${#SMB_PASS} -ge 8 ] || die "Generazione password fallita"
   save_creds
 }
 
@@ -499,18 +650,24 @@ save_creds() {
   cat > "$CRED_FILE" <<EOF
 HOST_NAME=${HOST_NAME}
 NAS_USER=${NAS_USER}
-SMB_PASS=${SMB_PASS}
+SMB_PASS='${SMB_PASS}'
 SHARE_NAME=${SHARE_NAME}
 SHARE_PATH=${SHARE_PATH}
+NASPI_GUEST=${NASPI_GUEST:-0}
+NASPI_AUTOFORMAT=${NASPI_AUTOFORMAT:-1}
 EOF
+  [ "${TS_USERSPACE:-0}" = "1" ] && echo "TS_USERSPACE=1" >> "$CRED_FILE"
   chmod 600 "$CRED_FILE"
 }
 
 write_smb_conf() {
+  local guest="no" mapg="Never"
+  if [ "${NASPI_GUEST:-0}" = "1" ]; then guest="yes"; mapg="Bad User"; fi
+  local marker="# naspi-conf v3 guest=${guest}"
   if [ -f /etc/samba/smb.conf ] \
-    && grep -q "^\\[${SHARE_NAME}\\]" /etc/samba/smb.conf \
-    && grep -q "path = ${SHARE_PATH}" /etc/samba/smb.conf \
+    && grep -qF "$marker" /etc/samba/smb.conf \
     && pdbedit -L 2>/dev/null | grep -q "^${NAS_USER}:"; then
+    printf '%s\n%s\n' "$SMB_PASS" "$SMB_PASS" | smbpasswd -s "$NAS_USER" >/dev/null 2>&1 || true
     skip "Samba già configurato"
     return 0
   fi
@@ -520,16 +677,23 @@ write_smb_conf() {
   fi
 
   cat > /etc/samba/smb.conf <<EOF
+${marker}
+# Generato da NASPI: rilancia install.sh per rigenerarlo (backup: smb.conf.naspi.bak)
 [global]
    workgroup = WORKGROUP
    server string = ${HOST_NAME}
    netbios name = ${HOST_NAME}
    server role = standalone server
    security = user
-   map to guest = Bad User
+   map to guest = ${mapg}
    dns proxy = no
+   log file = /var/log/samba/log.%m
    max log size = 50
-   min protocol = SMB2
+   logging = syslog@1 file
+   server min protocol = SMB2_02
+   deadtime = 15
+   getwd cache = yes
+   socket options = TCP_NODELAY IPTOS_LOWDELAY
    load printers = no
    printing = bsd
    printcap name = /dev/null
@@ -549,11 +713,13 @@ write_smb_conf() {
    browseable = yes
    read only = no
    writable = yes
-   guest ok = yes
+   guest ok = ${guest}
+   valid users = ${NAS_USER}$( [ "$guest" = "yes" ] && echo " nobody" )
    create mask = 0664
    directory mask = 0775
    force user = ${NAS_USER}
    force group = ${NAS_GROUP}
+   hide files = /lost+found/
 EOF
 
   if ! pdbedit -L 2>/dev/null | grep -q "^${NAS_USER}:"; then
@@ -893,6 +1059,81 @@ if [ "${1:-}" = "login" ]; then
   exit 0
 fi
 
+need_root() { [ "$(id -u)" -eq 0 ] || { echo "Esegui: sudo naspi $1"; exit 1; }; }
+
+power_report() {
+  local t
+  if command -v vcgencmd >/dev/null 2>&1; then
+    t="$(vcgencmd get_throttled 2>/dev/null | sed 's/.*=//')"
+    case "$t" in
+      0x0|"") echo "  Alimentazione: OK (nessun sotto-tensione rilevato)" ;;
+      *)
+        if [ $(( t & 0x1 )) -ne 0 ]; then
+          echo "  Alimentazione: SOTTO-TENSIONE ADESSO ($t) → disco instabile/riavvii"
+        elif [ $(( t & 0x10000 )) -ne 0 ]; then
+          echo "  Alimentazione: c'è stata SOTTO-TENSIONE dall'avvio ($t)"
+        else
+          echo "  Alimentazione: throttling ($t)"
+        fi
+        echo "    → alimentatore 5V ≥2.5A buono + SSD su hub USB ALIMENTATO o cavo Y"
+        ;;
+    esac
+  fi
+  if journalctl -k -b 0 --no-pager 2>/dev/null | grep -qiE 'under-?voltage'; then
+    echo "  Kernel: segnalata sotto-tensione in questo avvio"
+  fi
+}
+
+if [ "${1:-}" = "mount" ]; then
+  need_root mount
+  /usr/local/sbin/naspi-usb-mount 20
+  findmnt "$SHARE_PATH" || echo "SSD non montato: sudo naspi diag"
+  exit 0
+fi
+
+if [ "${1:-}" = "format" ]; then
+  need_root format
+  shift
+  exec /usr/local/sbin/naspi-format "$@"
+fi
+
+if [ "${1:-}" = "diag" ]; then
+  need_root diag
+  echo
+  echo "== Modello: $(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
+  echo "== Uptime: $(uptime -p 2>/dev/null)"
+  power_report
+  echo
+  echo "== Dischi"
+  lsblk -o NAME,SIZE,TYPE,TRAN,FSTYPE,LABEL,MOUNTPOINT 2>/dev/null
+  echo
+  echo "== /srv/nas"
+  findmnt "$SHARE_PATH" || echo "  non montato (microSD)"
+  df -h "$SHARE_PATH" | tail -1
+  echo
+  echo "== USB"
+  lsusb 2>/dev/null || true
+  echo
+  echo "== Ultimi eventi NASPI USB"
+  journalctl -t naspi-usb -n 15 --no-pager 2>/dev/null || true
+  echo
+  echo "== Kernel: USB/disco (reset, disconnessioni, errori I/O)"
+  journalctl -k -b 0 --no-pager 2>/dev/null \
+    | grep -iE 'usb [0-9-]+.*(disconnect|reset|new)|under-?voltage|I/O error|EXT4-fs error|over-current|uas|usb-storage' \
+    | tail -20 || true
+  if journalctl --list-boots --no-pager 2>/dev/null | grep -q '^ *-1'; then
+    echo
+    echo "== Fine dell'avvio precedente (se si è riavviato da solo, guarda qui)"
+    journalctl -b -1 -n 8 --no-pager 2>/dev/null || true
+  fi
+  echo
+  echo "== Servizi"
+  for s in smbd nmbd avahi-daemon tailscaled; do
+    printf '  %-14s %s\n' "$s" "$(systemctl is-active "$s" 2>/dev/null)"
+  done
+  exit 0
+fi
+
 hn="${HOST_NAME}.local"
 ts_json="$(tailscale status --json 2>/dev/null | tr -d '\n' || true)"
 ts_state="$(printf '%s' "$ts_json" | sed -n 's/.*"BackendState"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1 || true)"
@@ -939,8 +1180,11 @@ echo "         smb://${HOST_NAME}.local/${SHARE_NAME}"
 echo
 echo "  (se non apre: \\\\${HOST_NAME}.local\\${SHARE_NAME})"
 echo
-echo "  SSD USB: collegalo (già formattato exFAT/NTFS/ext4), si monta da solo"
-echo "  su /srv/nas. Pi 1: meglio hub USB alimentato. Poi resta al riavvio."
+echo "  SSD USB: collegalo e si monta da solo su /srv/nas (ext4/exFAT/NTFS/FAT)."
+echo "  Disco nuovo/vuoto: formattato ext4 in automatico. Con dati: mai toccato."
+echo "  Pi 1: SSD su hub USB ALIMENTATO (o cavo Y) + alimentatore 5V ≥2.5A,"
+echo "  altrimenti il Pi si riavvia o perde il disco (limite hardware)."
+if [ "$(id -u)" -eq 0 ]; then power_report; fi
 echo
 echo "----------------------------------------------------------"
 echo "  2) FUORI CASA (Tailscale)"
@@ -979,6 +1223,9 @@ fi
 echo
 echo "  Rivedi questo riepilogo:  sudo naspi"
 echo "  Nuovo link Tailscale:     sudo naspi login"
+echo "  Problemi SSD/riavvii:     sudo naspi diag"
+echo "  Rimonta SSD:              sudo naspi mount"
+echo "  Cancella e formatta SSD:  sudo naspi format"
 echo "=========================================================="
 echo
 CLI
@@ -998,8 +1245,31 @@ EOF
   chown "${NAS_USER}:${NAS_GROUP}" "${SHARE_PATH}/LEGGIMI.txt" 2>/dev/null || true
 }
 
+install_format_tool() {
+  local here="" tmp
+  [ -n "${_NASPI_SRC_DIR:-}" ] && here="${_NASPI_SRC_DIR}/format-usb.sh"
+  if [ -n "$here" ] && [ -f "$here" ]; then
+    tr -d '\r' < "$here" > /usr/local/sbin/naspi-format
+  else
+    tmp="$(mktemp)"
+    if http_get "${REPO_RAW}/format-usb.sh" "$tmp"; then
+      tr -d '\r' < "$tmp" > /usr/local/sbin/naspi-format
+    else
+      warn "format-usb.sh non scaricabile: 'sudo naspi format' non disponibile"
+    fi
+    rm -f "$tmp"
+  fi
+  [ -f /usr/local/sbin/naspi-format ] && chmod 755 /usr/local/sbin/naspi-format
+  return 0
+}
+
 print_report() {
   /usr/local/bin/naspi
+  if [ "${BOOT_CHANGED:-0}" = "1" ]; then
+    echo
+    warn "Impostazioni USB di avvio aggiornate: riavvia una volta il Pi (sudo reboot)"
+    warn "per applicarle del tutto. Dopo il riavvio tutto riparte da solo."
+  fi
 }
 
 main() {
@@ -1009,6 +1279,8 @@ main() {
   log "Utente Samba: ${NAS_USER}  (i passi già fatti vengono saltati)"
   ensure_swap
   lower_gpu_mem
+  usb_ssd_stable
+  tune_system
   apt_ok
   smb_password
   setup_share_dir
@@ -1017,6 +1289,7 @@ main() {
   write_avahi
   start_samba
   write_cli
+  install_format_tool
   install_tailscale
   systemctl enable tailscaled >/dev/null 2>&1 || true
   bring_up_tailscale
