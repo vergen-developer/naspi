@@ -696,7 +696,8 @@ setup_share_dir() {
   mkdir -p "$SHARE_PATH"
   install_usb_automount
   log "Cerco SSD/HDD USB (fino a 30s)"
-  /usr/local/sbin/naspi-usb-mount 30 </dev/null || warn "SSD non montato: vedi 'sudo naspi diag'"
+  /usr/local/sbin/naspi-usb-mount 30 </dev/null 2>&1 | sed -u 's/^naspi-usb: /    › /' \
+    || warn "SSD non montato: vedi 'sudo naspi diag'"
   if findmnt -n "$SHARE_PATH" >/dev/null 2>&1; then
     log "SSD su ${SHARE_PATH}: $(findmnt -n -o SOURCE,FSTYPE "$SHARE_PATH")"
   else
@@ -895,7 +896,11 @@ start_samba() {
   systemctl enable smbd nmbd avahi-daemon >/dev/null 2>&1 || true
   systemctl enable samba >/dev/null 2>&1 || true
   if systemctl is-active --quiet smbd || systemctl is-active --quiet samba; then
-    skip "Samba già avviato"
+    # applica subito la configurazione appena scritta
+    smbcontrol all reload-config >/dev/null 2>&1 \
+      || systemctl reload smbd >/dev/null 2>&1 || true
+    systemctl reload avahi-daemon >/dev/null 2>&1 || true
+    ok "Samba attivo, configurazione applicata"
     return 0
   fi
   log "Avvio Samba"
@@ -1104,6 +1109,7 @@ write_cli() {
 #!/bin/bash
 # NASPI · VERGEN TECHNOLOGY — comando di gestione del NAS
 set -uo pipefail
+PATH="$PATH:/usr/local/sbin:/usr/sbin:/sbin"   # tailscale/smbd anche da utente normale
 CRED=/etc/naspi/credentials
 HOST_NAME=mariarosaria
 SHARE_NAME=nas
